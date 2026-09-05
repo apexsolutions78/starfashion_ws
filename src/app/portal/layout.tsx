@@ -54,9 +54,11 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-8">
             <Link href="/portal/catalog" className="flex items-center space-x-3">
-              <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-white shadow-md">
-                SF
-              </div>
+              <img
+                src="/logo-small.png"
+                alt="StarFashion"
+                className="w-9 h-9 rounded-xl object-contain bg-white p-1"
+              />
               <span className="font-bold text-lg tracking-tight hidden sm:inline">StarFashion B2B</span>
             </Link>
 

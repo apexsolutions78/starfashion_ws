@@ -52,9 +52,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <aside className="w-full md:w-64 bg-slate-900 border-b md:border-b-0 md:border-r border-slate-800 p-6 flex flex-col justify-between">
         <div className="space-y-8">
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center font-bold text-white shadow-lg">
-              SF
-            </div>
+            <img
+              src="/logo-small.png"
+              alt="StarFashion"
+              className="w-10 h-10 rounded-xl object-contain bg-white p-1"
+            />
             <div>
               <div className="font-bold text-sm text-white tracking-tight">Master Admin</div>
               <div className="text-[11px] text-emerald-400 font-mono">Control Console</div>

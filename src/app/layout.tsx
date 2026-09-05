@@ -4,6 +4,9 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'StarFashion Wholesale Portal',
   description: 'B2B Wholesale Ordering & Account Management System',
+  icons: {
+    icon: '/logo-small.png',
+  },
 };
 
 export default function RootLayout({

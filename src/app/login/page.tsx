@@ -53,8 +53,12 @@ export default function LoginPage() {
 
       <div className="w-full max-w-md bg-slate-900/90 border border-slate-800 rounded-2xl p-8 shadow-2xl backdrop-blur-xl z-10">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 mb-4">
-            <ShoppingBag className="w-7 h-7" />
+          <div className="mb-4">
+            <img
+              src="/logo.png"
+              alt="StarFashion Wholesale"
+              className="h-16 mx-auto object-contain"
+            />
           </div>
           <h1 className="text-2xl font-bold text-white tracking-tight">StarFashion Wholesale</h1>
           <p className="text-slate-400 text-sm mt-1">B2B Wholesale Ordering & Account Portal</p>
