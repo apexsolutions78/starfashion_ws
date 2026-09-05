@@ -63,18 +63,13 @@ export async function POST(request: NextRequest) {
       return ApiUtils.forbidden();
     }
 
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
+    const body = await request.json();
+    const { csvContent, createCategories } = body;
 
-    if (!file) {
-      return ApiUtils.error('No file uploaded');
+    if (!csvContent) {
+      return ApiUtils.error('No CSV content provided');
     }
 
-    if (!file.name.endsWith('.csv')) {
-      return ApiUtils.error('Only CSV files are supported');
-    }
-
-    const csvContent = await file.text();
     const rows = parseCSV(csvContent);
 
     if (rows.length === 0) {
@@ -86,10 +81,50 @@ export async function POST(request: NextRequest) {
     const colors = await prisma.color.findMany();
     const sizes = await prisma.size.findMany();
 
-    const categoryMap = new Map(categories.map(c => [c.name.toLowerCase(), c.id]));
+    const categoryMap = new Map(categories.map(c => [c.name.toLowerCase(), c]));
     const collectionMap = new Map(collections.map(c => [c.name.toLowerCase(), c.id]));
     const colorMap = new Map(colors.map(c => [c.name.toLowerCase(), c.id]));
     const sizeMap = new Map(sizes.map(s => [s.name.toLowerCase(), s.id]));
+
+    // Detect new categories
+    const newCategoryNames = new Set<string>();
+    for (const row of rows) {
+      const existingCategory = categoryMap.get(row.categoryName.toLowerCase());
+      if (!existingCategory && row.categoryName) {
+        newCategoryNames.add(row.categoryName);
+      }
+    }
+
+    // If there are new categories and user hasn't confirmed creation, return them
+    if (newCategoryNames.size > 0 && !createCategories) {
+      return ApiUtils.success({
+        requiresConfirmation: true,
+        newCategories: Array.from(newCategoryNames),
+        totalRows: rows.length,
+      }, 'New categories found. Confirmation required.');
+    }
+
+    // Create new categories if confirmed
+    const createdCategories: { name: string; id: string }[] = [];
+    if (createCategories && newCategoryNames.size > 0) {
+      for (const categoryName of newCategoryNames) {
+        const slug = categoryName
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '');
+
+        const newCategory = await prisma.category.create({
+          data: {
+            name: categoryName,
+            slug,
+            active: true,
+          },
+        });
+
+        categoryMap.set(categoryName.toLowerCase(), newCategory);
+        createdCategories.push({ name: categoryName, id: newCategory.id });
+      }
+    }
 
     const warehouse = await prisma.inventoryLocation.findFirst({
       where: { code: 'WH-CENTRAL' },
@@ -100,6 +135,7 @@ export async function POST(request: NextRequest) {
       created: 0,
       variantsCreated: 0,
       skipped: 0,
+      categoriesCreated: createdCategories.map(c => c.name),
       errors: [] as string[],
     };
 
@@ -107,8 +143,8 @@ export async function POST(request: NextRequest) {
 
     for (const row of rows) {
       try {
-        const categoryId = categoryMap.get(row.categoryName.toLowerCase());
-        if (!categoryId) {
+        const category = categoryMap.get(row.categoryName.toLowerCase());
+        if (!category) {
           results.errors.push(`Row ${results.created + results.skipped + 1}: Category "${row.categoryName}" not found`);
           results.skipped++;
           continue;
@@ -152,7 +188,7 @@ export async function POST(request: NextRequest) {
                 name: row.name,
                 slug: row.slug,
                 description: row.description || null,
-                categoryId,
+                categoryId: category.id,
                 collectionId,
                 basePrice: row.basePrice,
               },

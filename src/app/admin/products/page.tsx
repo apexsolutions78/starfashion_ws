@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Plus, Search, Edit2, Trash2, Package, Image as ImageIcon, Download, Upload, FileText, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Package, Image as ImageIcon, Download, Upload, FileText, X, CheckCircle, AlertCircle, FolderPlus } from 'lucide-react';
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -15,6 +15,9 @@ export default function AdminProductsPage() {
   const [importModal, setImportModal] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<any>(null);
+  const [pendingCsvContent, setPendingCsvContent] = useState<string | null>(null);
+  const [newCategories, setNewCategories] = useState<string[]>([]);
+  const [categoryConfirmation, setCategoryConfirmation] = useState<'pending' | 'confirmed' | 'rejected' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -102,6 +105,9 @@ export default function AdminProductsPage() {
 
   const handleImportClick = () => {
     setImportResult(null);
+    setPendingCsvContent(null);
+    setNewCategories([]);
+    setCategoryConfirmation(null);
     setImportModal(true);
   };
 
@@ -111,14 +117,61 @@ export default function AdminProductsPage() {
 
     setImporting(true);
     setImportResult(null);
+    setNewCategories([]);
+    setCategoryConfirmation(null);
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
+      const csvContent = await file.text();
+      setPendingCsvContent(csvContent);
 
+      // First pass: check for new categories
       const res = await fetch('/api/v1/admin/products/import', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ csvContent, createCategories: false }),
+      });
+
+      const data = await res.json();
+
+      if (data.success && data.data?.requiresConfirmation) {
+        // New categories found, show confirmation
+        setNewCategories(data.data.newCategories);
+        setCategoryConfirmation('pending');
+      } else if (data.success) {
+        // No new categories, proceed directly
+        setImportResult(data.data);
+        fetchProducts();
+      } else {
+        setImportResult({ error: data.error });
+      }
+    } catch (error) {
+      console.error('Error importing products:', error);
+      setImportResult({ error: 'Failed to import products' });
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleCategoryConfirmation = async (confirmed: boolean) => {
+    if (!pendingCsvContent) return;
+
+    if (!confirmed) {
+      setCategoryConfirmation('rejected');
+      setImportResult({ error: 'Import cancelled. Please update your CSV file with existing categories.' });
+      return;
+    }
+
+    setCategoryConfirmation('confirmed');
+    setImporting(true);
+
+    try {
+      const res = await fetch('/api/v1/admin/products/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ csvContent: pendingCsvContent, createCategories: true }),
       });
 
       const data = await res.json();
@@ -134,9 +187,6 @@ export default function AdminProductsPage() {
       setImportResult({ error: 'Failed to import products' });
     } finally {
       setImporting(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
     }
   };
 
@@ -335,18 +385,79 @@ export default function AdminProductsPage() {
       {/* Import Modal */}
       {importModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-lg w-full">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-white">Import Products from CSV</h3>
               <button
-                onClick={() => setImportModal(false)}
+                onClick={() => {
+                  setImportModal(false);
+                  setImportResult(null);
+                  setPendingCsvContent(null);
+                  setNewCategories([]);
+                  setCategoryConfirmation(null);
+                }}
                 className="text-slate-400 hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {!importResult ? (
+            {/* Show category confirmation if needed */}
+            {categoryConfirmation === 'pending' && (
+              <div className="mb-4">
+                <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-lg p-4 mb-4">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <FolderPlus className="w-5 h-5 text-indigo-400" />
+                    <span className="text-indigo-400 font-medium">New Categories Detected</span>
+                  </div>
+                  <p className="text-slate-300 text-sm mb-3">
+                    The following categories were found in your CSV file but don't exist in the system:
+                  </p>
+                  <div className="bg-slate-950/50 rounded-lg p-3 mb-4">
+                    <ul className="space-y-1">
+                      {newCategories.map((cat, idx) => (
+                        <li key={idx} className="flex items-center space-x-2 text-sm">
+                          <FolderPlus className="w-4 h-4 text-indigo-400" />
+                          <span className="text-white font-medium">{cat}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <p className="text-slate-400 text-xs mb-4">
+                    Would you like to create these categories automatically?
+                  </p>
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={() => handleCategoryConfirmation(true)}
+                      disabled={importing}
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2 disabled:opacity-50"
+                    >
+                      {importing ? (
+                        <>
+                          <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                          <span>Creating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-4 h-4" />
+                          <span>Yes, Create & Import</span>
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleCategoryConfirmation(false)}
+                      disabled={importing}
+                      className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                    >
+                      No, Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Show upload area only if not waiting for confirmation */}
+            {!importResult && categoryConfirmation !== 'pending' && (
               <>
                 <div className="mb-4">
                   <p className="text-slate-400 text-sm mb-4">
@@ -381,7 +492,7 @@ export default function AdminProductsPage() {
                     {importing ? (
                       <div className="flex flex-col items-center">
                         <div className="animate-spin w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full mb-2"></div>
-                        <span className="text-slate-400 text-sm">Importing...</span>
+                        <span className="text-slate-400 text-sm">Processing CSV...</span>
                       </div>
                     ) : (
                       <>
@@ -401,7 +512,10 @@ export default function AdminProductsPage() {
                   </div>
                 </div>
               </>
-            ) : (
+            )}
+
+            {/* Show results */}
+            {importResult && (
               <div>
                 {importResult.error ? (
                   <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-4">
@@ -436,6 +550,19 @@ export default function AdminProductsPage() {
                       </div>
                     </div>
 
+                    {importResult.categoriesCreated && importResult.categoriesCreated.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-emerald-500/30">
+                        <p className="text-emerald-300 text-xs mb-1">New categories created:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {importResult.categoriesCreated.map((cat: string, idx: number) => (
+                            <span key={idx} className="bg-emerald-500/20 text-emerald-300 text-xs px-2 py-0.5 rounded-full">
+                              {cat}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {importResult.errors && importResult.errors.length > 0 && (
                       <div className="mt-4">
                         <p className="text-slate-400 text-xs mb-2">Errors:</p>
@@ -453,6 +580,9 @@ export default function AdminProductsPage() {
                   onClick={() => {
                     setImportModal(false);
                     setImportResult(null);
+                    setPendingCsvContent(null);
+                    setNewCategories([]);
+                    setCategoryConfirmation(null);
                   }}
                   className="w-full bg-slate-800 hover:bg-slate-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
                 >
