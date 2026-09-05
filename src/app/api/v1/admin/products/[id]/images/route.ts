@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getAuthSession } from '@/lib/middleware-auth';
 import { ApiUtils } from '@/lib/api-response';
-import { writeFile, mkdir } from 'fs/promises';
+import { writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
 import crypto from 'crypto';
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
+const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png'];
 
 export async function POST(
   request: NextRequest,
@@ -33,23 +37,43 @@ export async function POST(
       return ApiUtils.error('No images provided');
     }
 
+    if (files.length > 10) {
+      return ApiUtils.error('Maximum 10 images allowed per upload');
+    }
+
     const uploadDir = join(process.cwd(), 'public', 'images', 'products');
     await mkdir(uploadDir, { recursive: true });
 
     const createdImages = [];
+    const errors: string[] = [];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
 
-      if (!file.type.startsWith('image/')) {
+      // Validate file type
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        errors.push(`"${file.name}" is not a JPEG/PNG image`);
+        continue;
+      }
+
+      // Validate file extension
+      const ext = file.name.split('.').pop()?.toLowerCase() || '';
+      if (!ALLOWED_EXTENSIONS.includes(ext)) {
+        errors.push(`"${file.name}" has invalid extension`);
+        continue;
+      }
+
+      // Validate file size
+      if (file.size > MAX_FILE_SIZE) {
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+        errors.push(`"${file.name}" exceeds 5MB limit (${sizeMB}MB)`);
         continue;
       }
 
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
-      const fileExtension = file.name.split('.').pop() || 'jpg';
-      const fileName = `${crypto.randomUUID()}.${fileExtension}`;
+      const fileName = `${crypto.randomUUID()}.${ext}`;
       const filePath = join(uploadDir, fileName);
 
       await writeFile(filePath, buffer);
@@ -72,7 +96,15 @@ export async function POST(
       createdImages.push(image);
     }
 
-    return ApiUtils.success(createdImages, `${createdImages.length} images uploaded successfully`);
+    if (errors.length > 0 && createdImages.length === 0) {
+      return ApiUtils.error(errors.join('. '));
+    }
+
+    const message = errors.length > 0
+      ? `${createdImages.length} images uploaded. Skipped: ${errors.join(', ')}`
+      : `${createdImages.length} images uploaded successfully`;
+
+    return ApiUtils.success(createdImages, message);
   } catch (error) {
     console.error('Error uploading images:', error);
     return ApiUtils.error('Failed to upload images');

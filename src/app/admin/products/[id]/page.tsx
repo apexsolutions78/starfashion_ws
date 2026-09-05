@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Save, ArrowLeft, Upload, X, Plus, Trash2, Image as ImageIcon } from 'lucide-react';
+import { Save, ArrowLeft, Upload, X, Plus, Trash2, Image as ImageIcon, FolderOpen, AlertCircle, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
@@ -29,6 +29,13 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
   const [variants, setVariants] = useState<any[]>([]);
   const [images, setImages] = useState<any[]>([]);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+  const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
+  const MAX_FILES = 10;
 
   useEffect(() => {
     fetchProduct();
@@ -106,11 +113,49 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    setUploadError(null);
+    setUploadSuccess(null);
+
+    // Validate file count
+    if (files.length > MAX_FILES) {
+      setUploadError(`Maximum ${MAX_FILES} files allowed at once`);
+      return;
+    }
+
+    // Validate each file
+    const validFiles: File[] = [];
+    const errors: string[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        errors.push(`"${file.name}" is not a JPEG/PNG image`);
+        continue;
+      }
+
+      if (file.size > MAX_FILE_SIZE) {
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+        errors.push(`"${file.name}" exceeds 5MB limit (${sizeMB}MB)`);
+        continue;
+      }
+
+      validFiles.push(file);
+    }
+
+    if (errors.length > 0) {
+      setUploadError(errors.join('. '));
+    }
+
+    if (validFiles.length === 0) {
+      return;
+    }
+
     setUploading(true);
     try {
       const formData = new FormData();
-      for (let i = 0; i < files.length; i++) {
-        formData.append('images', files[i]);
+      for (const file of validFiles) {
+        formData.append('images', file);
       }
 
       const res = await fetch(`/api/v1/admin/products/${id}/images`, {
@@ -122,16 +167,22 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
       if (data.success) {
         setImages([...images, ...data.data]);
+        setUploadSuccess(`${data.data.length} image(s) uploaded successfully`);
+        setTimeout(() => setUploadSuccess(null), 3000);
       } else {
-        alert(data.error || 'Failed to upload images');
+        setUploadError(data.error || 'Failed to upload images');
       }
     } catch (error) {
       console.error('Error uploading images:', error);
-      alert('Failed to upload images');
+      setUploadError('Failed to upload images');
     } finally {
       setUploading(false);
       e.target.value = '';
     }
+  };
+
+  const handleBrowseClick = () => {
+    fileInputRef.current?.click();
   };
 
   const handleDeleteImage = async (imageId: string) => {
@@ -378,36 +429,98 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         <div className="space-y-6">
           {/* Images */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-            <h2 className="text-lg font-semibold text-white mb-4">Product Images</h2>
+            <h2 className="text-lg font-semibold text-white mb-2">Product Images</h2>
 
-            {/* Upload Button */}
-            <label className="block w-full border-2 border-dashed border-slate-700 hover:border-emerald-500 rounded-lg p-4 text-center cursor-pointer transition-colors mb-4">
+            {/* File Restrictions Note */}
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 mb-4">
+              <div className="flex items-start space-x-2">
+                <AlertCircle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+                <div className="text-xs text-amber-300">
+                  <p className="font-medium mb-1">Image Requirements:</p>
+                  <ul className="space-y-0.5 text-amber-200/80">
+                    <li>• Format: <strong>JPEG (.jpg)</strong> or <strong>PNG (.png)</strong> only</li>
+                    <li>• Maximum size: <strong>5MB per image</strong></li>
+                    <li>• Maximum files: <strong>10 per upload</strong></li>
+                    <li>• Recommended: <strong>1000×1000px</strong> for best quality</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Upload Area */}
+            <div className="mb-4">
               <input
+                ref={fileInputRef}
                 type="file"
                 multiple
-                accept="image/*"
+                accept=".jpg,.jpeg,.png,image/jpeg,image/png"
                 onChange={handleImageUpload}
                 className="hidden"
                 disabled={uploading}
               />
-              {uploading ? (
-                <div className="animate-spin w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full mx-auto"></div>
-              ) : (
-                <>
-                  <Upload className="w-6 h-6 text-slate-500 mx-auto mb-2" />
-                  <span className="text-slate-400 text-sm">Click to upload images</span>
-                </>
-              )}
-            </label>
+
+              <div className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                uploading ? 'border-emerald-500 bg-emerald-500/5' : 'border-slate-700 hover:border-slate-600'
+              }`}>
+                {uploading ? (
+                  <div className="flex flex-col items-center">
+                    <div className="animate-spin w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full mb-3"></div>
+                    <span className="text-slate-400 text-sm">Uploading images...</span>
+                  </div>
+                ) : (
+                  <>
+                    <FolderOpen className="w-10 h-10 text-slate-500 mx-auto mb-3" />
+                    <p className="text-slate-400 text-sm mb-3">
+                      Drag & drop images here, or
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleBrowseClick}
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-lg text-sm font-medium inline-flex items-center space-x-2 transition-colors"
+                    >
+                      <FolderOpen className="w-4 h-4" />
+                      <span>Browse Files</span>
+                    </button>
+                    <p className="text-slate-500 text-xs mt-3">
+                      Select JPEG or PNG images (max 5MB each)
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Upload Messages */}
+            {uploadError && (
+              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4">
+                <div className="flex items-start space-x-2">
+                  <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
+                  <p className="text-red-300 text-xs">{uploadError}</p>
+                </div>
+              </div>
+            )}
+
+            {uploadSuccess && (
+              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 mb-4">
+                <div className="flex items-center space-x-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-400" />
+                  <p className="text-emerald-300 text-xs">{uploadSuccess}</p>
+                </div>
+              </div>
+            )}
 
             {/* Image List */}
             {images.length === 0 ? (
-              <p className="text-slate-500 text-sm text-center py-4">No images uploaded</p>
+              <div className="text-center py-6 bg-slate-950/30 rounded-lg">
+                <ImageIcon className="w-10 h-10 text-slate-600 mx-auto mb-2" />
+                <p className="text-slate-500 text-sm">No images uploaded yet</p>
+                <p className="text-slate-600 text-xs mt-1">Upload images to showcase this product</p>
+              </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
+                <p className="text-slate-400 text-xs mb-2">{images.length} image(s) uploaded</p>
                 {images.map((image) => (
-                  <div key={image.id} className="flex items-center space-x-3 bg-slate-950/50 rounded-lg p-2">
-                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-slate-800 flex-shrink-0">
+                  <div key={image.id} className="flex items-center space-x-3 bg-slate-950/50 rounded-lg p-2 border border-slate-800/50">
+                    <div className="w-14 h-14 rounded-lg overflow-hidden bg-slate-800 flex-shrink-0">
                       <img
                         src={image.imagePath}
                         alt=""
@@ -417,25 +530,25 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-slate-400 truncate">{image.imagePath.split('/').pop()}</p>
                       {image.isPrimary && (
-                        <span className="text-xs text-emerald-400">Primary</span>
+                        <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">Primary</span>
                       )}
                     </div>
                     <div className="flex space-x-1">
                       {!image.isPrimary && (
                         <button
                           onClick={() => handleSetPrimaryImage(image.id)}
-                          className="text-slate-400 hover:text-emerald-400 p-1"
+                          className="text-slate-400 hover:text-emerald-400 p-1.5 rounded hover:bg-slate-800 transition-colors"
                           title="Set as primary"
                         >
-                          <ImageIcon className="w-4 h-4" />
+                          <ImageIcon className="w-3.5 h-3.5" />
                         </button>
                       )}
                       <button
                         onClick={() => handleDeleteImage(image.id)}
-                        className="text-slate-400 hover:text-red-400 p-1"
+                        className="text-slate-400 hover:text-red-400 p-1.5 rounded hover:bg-slate-800 transition-colors"
                         title="Delete"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
