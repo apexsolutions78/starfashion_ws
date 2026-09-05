@@ -19,6 +19,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         invoice: {
           include: { items: true, allocations: true },
         },
+        payments: {
+          where: { status: { not: 'VOID' } },
+          orderBy: { createdAt: 'desc' },
+        },
       },
     });
 

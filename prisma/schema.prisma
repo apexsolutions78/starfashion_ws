@@ -328,6 +328,7 @@ model Order {
   customer CustomerCompany @relation(fields: [customerId], references: [id])
   items    OrderItem[]
   invoice  Invoice?
+  payments Payment[]
 
   @@map("orders")
 }
@@ -404,16 +405,19 @@ model Payment {
   id               String   @id @default(uuid())
   paymentNumber    String   @unique
   customerId       String
+  orderId          String?  // Optional: link payment to specific order
   amount           Float
   paymentDate      DateTime @default(now())
   paymentMethod    String   @default("BANK_TRANSFER") // "BANK_TRANSFER" | "CHEQUE" | "CREDIT_CARD" | "CASH" | "OTHER"
   referenceNumber  String?
-  status           String   @default("POSTED")        // "POSTED" | "VOID" | "PENDING"
+  screenshotPath   String?  // Payment deposit screenshot
+  status           String   @default("PENDING")       // "PENDING" | "POSTED" | "VOID"
   notes            String?
   recordedByUserId String?
   createdAt        DateTime @default(now())
 
   customer    CustomerCompany     @relation(fields: [customerId], references: [id])
+  order       Order?              @relation(fields: [orderId], references: [id])
   recordedBy  User?               @relation("RecordedPayments", fields: [recordedByUserId], references: [id])
   allocations PaymentAllocation[]
 

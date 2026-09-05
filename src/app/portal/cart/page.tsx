@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShoppingCart, Trash2, ArrowRight, Tag, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { ShoppingCart, Trash2, ArrowRight, Tag, ShieldAlert, CheckCircle2, CreditCard, Upload, X } from 'lucide-react';
 
 export default function CartPage() {
   const router = useRouter();
@@ -10,6 +10,20 @@ export default function CartPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
+  const [orderSuccess, setOrderSuccess] = useState(false);
+  const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
+
+  // Payment state
+  const [showPayment, setShowPayment] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('BANK_TRANSFER');
+  const [referenceNumber, setReferenceNumber] = useState('');
+  const [paymentNotes, setPaymentNotes] = useState('');
+  const [paymentScreenshot, setPaymentScreenshot] = useState<File | null>(null);
+  const [submittingPayment, setSubmittingPayment] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchCart = () => {
     setLoading(true);
@@ -52,11 +66,61 @@ export default function CartPage() {
         throw new Error(data.error || 'Failed to submit order');
       }
 
-      router.push(`/portal/orders`);
+      setCreatedOrderId(data.data.id);
+      setOrderSuccess(true);
     } catch (err: any) {
       setOrderError(err.message);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleSubmitPayment = async () => {
+    if (!createdOrderId || !paymentAmount) return;
+
+    setSubmittingPayment(true);
+    setPaymentError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('orderId', createdOrderId);
+      formData.append('amount', paymentAmount);
+      formData.append('paymentMethod', paymentMethod);
+      formData.append('referenceNumber', referenceNumber);
+      formData.append('notes', paymentNotes);
+      if (paymentScreenshot) {
+        formData.append('screenshot', paymentScreenshot);
+      }
+
+      const res = await fetch('/api/v1/payments', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to submit payment');
+      }
+
+      setPaymentSuccess(true);
+      setTimeout(() => {
+        router.push('/portal/orders');
+      }, 2000);
+    } catch (err: any) {
+      setPaymentError(err.message);
+    } finally {
+      setSubmittingPayment(false);
+    }
+  };
+
+  const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setPaymentError('Screenshot must be less than 5MB');
+        return;
+      }
+      setPaymentScreenshot(file);
     }
   };
 
@@ -66,6 +130,165 @@ export default function CartPage() {
 
   const quote = cartData?.quote;
   const lineItems = quote?.lineItems || [];
+  const totalAmount = quote?.netSubtotal || 0;
+
+  // Payment Success View
+  if (paymentSuccess) {
+    return (
+      <div className="py-20 text-center bg-white rounded-2xl border border-slate-200">
+        <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
+        <h3 className="text-xl font-bold text-slate-900 mb-2">Payment Submitted!</h3>
+        <p className="text-slate-500 text-sm">Your payment is pending verification. Redirecting to orders...</p>
+      </div>
+    );
+  }
+
+  // Order Success with Payment Option
+  if (orderSuccess && createdOrderId) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center">
+          <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
+          <h3 className="text-lg font-bold text-slate-900 mb-1">Order Submitted Successfully!</h3>
+          <p className="text-slate-500 text-sm">Your order has been placed and is pending confirmation.</p>
+        </div>
+
+        {!showPayment ? (
+          <div className="bg-white border border-slate-200 rounded-2xl p-6">
+            <h4 className="text-base font-bold text-slate-900 mb-4">Submit Payment</h4>
+            <p className="text-slate-500 text-sm mb-4">
+              You can submit your payment now. The payment will be verified by our team.
+            </p>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => router.push('/portal/orders')}
+                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm py-3 rounded-xl transition-all"
+              >
+                Skip for Now
+              </button>
+              <button
+                onClick={() => setShowPayment(true)}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm py-3 rounded-xl transition-all flex items-center justify-center space-x-2"
+              >
+                <CreditCard className="w-4 h-4" />
+                <span>Submit Payment</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white border border-slate-200 rounded-2xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-base font-bold text-slate-900">Payment Details</h4>
+              <button onClick={() => setShowPayment(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {paymentError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl p-3 mb-4">
+                {paymentError}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div className="bg-slate-50 rounded-xl p-4 text-sm">
+                <div className="flex justify-between mb-1">
+                  <span className="text-slate-500">Order Total:</span>
+                  <span className="font-bold text-slate-900">Rs.{totalAmount.toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-2">Amount to Pay (Rs.) *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max={totalAmount}
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-lg px-4 py-2 text-slate-900 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                  placeholder="Enter amount"
+                />
+                <p className="text-xs text-slate-400 mt-1">Balance remaining: Rs.{(totalAmount - parseFloat(paymentAmount || '0')).toFixed(2)}</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-2">Payment Method *</label>
+                <select
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-lg px-4 py-2 text-slate-900 text-sm focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="BANK_TRANSFER">Bank Transfer</option>
+                  <option value="CHEQUE">Cheque</option>
+                  <option value="CASH">Cash</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-2">Reference Number</label>
+                <input
+                  type="text"
+                  value={referenceNumber}
+                  onChange={(e) => setReferenceNumber(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-lg px-4 py-2 text-slate-900 text-sm focus:outline-none focus:border-indigo-500"
+                  placeholder="Transaction/Cheque reference"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-2">Payment Screenshot</label>
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-slate-300 hover:border-indigo-400 rounded-lg p-4 text-center cursor-pointer transition-colors"
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleScreenshotChange}
+                    className="hidden"
+                  />
+                  {paymentScreenshot ? (
+                    <div className="flex items-center justify-center space-x-2">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                      <span className="text-sm text-slate-700">{paymentScreenshot.name}</span>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="w-6 h-6 text-slate-400 mx-auto mb-1" />
+                      <p className="text-xs text-slate-500">Click to upload payment screenshot</p>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-2">Notes</label>
+                <textarea
+                  value={paymentNotes}
+                  onChange={(e) => setPaymentNotes(e.target.value)}
+                  rows={2}
+                  className="w-full bg-white border border-slate-300 rounded-lg px-4 py-2 text-slate-900 text-sm focus:outline-none focus:border-indigo-500"
+                  placeholder="Additional payment notes"
+                />
+              </div>
+
+              <button
+                onClick={handleSubmitPayment}
+                disabled={submittingPayment || !paymentAmount || parseFloat(paymentAmount) <= 0}
+                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm py-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submittingPayment ? 'Submitting Payment...' : 'Submit Payment'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

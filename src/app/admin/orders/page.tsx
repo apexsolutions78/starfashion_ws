@@ -231,25 +231,88 @@ export default function AdminOrdersPage() {
                   <span className="text-white">Rs.{(selectedOrder.grossSubtotal || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Tier Discount ({selectedOrder.tierDiscountPct || 0}%)</span>
+                  <span className="text-slate-400">Tier Discount ({selectedOrder.discountPercentSnapshot || 0}%)</span>
                   <span className="text-amber-400">-Rs.{(selectedOrder.discountTotal || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400">Net Subtotal</span>
                   <span className="text-white">Rs.{(selectedOrder.netSubtotal || 0).toFixed(2)}</span>
                 </div>
-                {selectedOrder.roundingAdjustment != null && selectedOrder.roundingAdjustment !== 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Rounding</span>
-                    <span className="text-slate-300">Rs.{selectedOrder.roundingAdjustment.toFixed(2)}</span>
-                  </div>
-                )}
                 <div className="flex justify-between pt-2 border-t border-slate-800">
                   <span className="text-white font-bold">Grand Total</span>
                   <span className="text-emerald-400 font-bold text-lg">Rs.{(selectedOrder.grandTotal || 0).toFixed(2)}</span>
                 </div>
               </div>
             </div>
+
+            {/* Payment History */}
+            {selectedOrder.payments && selectedOrder.payments.length > 0 && (
+              <div className="p-5 border-t border-slate-800">
+                <h3 className="text-sm font-semibold text-white mb-3">Payment History</h3>
+                <div className="space-y-3">
+                  {selectedOrder.payments.map((payment: any) => (
+                    <div key={payment.id} className="bg-slate-950/50 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-white font-bold text-sm">{payment.paymentNumber}</span>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                            payment.status === 'PENDING' ? 'bg-amber-500/20 text-amber-400' :
+                            payment.status === 'APPROVED' ? 'bg-emerald-500/20 text-emerald-400' :
+                            'bg-red-500/20 text-red-400'
+                          }`}>
+                            {payment.status}
+                          </span>
+                        </div>
+                        <span className="text-emerald-400 font-bold">Rs.{payment.amount.toFixed(2)}</span>
+                      </div>
+                      <div className="text-xs text-slate-400 space-y-1">
+                        <div>Method: <span className="text-slate-300">{payment.paymentMethod}</span></div>
+                        {payment.referenceNumber && (
+                          <div>Reference: <span className="text-slate-300">{payment.referenceNumber}</span></div>
+                        )}
+                        <div>Submitted: {new Date(payment.createdAt).toLocaleString()}</div>
+                        {payment.screenshotPath && (
+                          <div className="mt-2">
+                            <a
+                              href={payment.screenshotPath}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-indigo-400 hover:text-indigo-300 underline"
+                            >
+                              View Screenshot
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Payment Summary */}
+            {selectedOrder.payments && (
+              <div className="p-5 border-t border-slate-800">
+                <div className="bg-slate-950/50 rounded-xl p-4 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Total Paid</span>
+                    <span className="text-emerald-400 font-bold">
+                      Rs.{selectedOrder.payments.reduce((sum: number, p: any) => sum + p.amount, 0).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Outstanding Balance</span>
+                    <span className={`font-bold ${
+                      (selectedOrder.grandTotal - selectedOrder.payments.reduce((sum: number, p: any) => sum + p.amount, 0)) > 0
+                        ? 'text-amber-400'
+                        : 'text-emerald-400'
+                    }`}>
+                      Rs.{(selectedOrder.grandTotal - selectedOrder.payments.reduce((sum: number, p: any) => sum + p.amount, 0)).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="p-5 border-t border-slate-800 flex justify-end space-x-3">
