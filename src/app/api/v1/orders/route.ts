@@ -22,6 +22,10 @@ export async function GET(req: NextRequest) {
         customer: { select: { companyName: true } },
         items: true,
         invoice: { select: { invoiceNumber: true, status: true, paidAmount: true } },
+        payments: {
+          where: { status: { not: 'VOID' } },
+          select: { amount: true, status: true },
+        },
       },
       orderBy: { submittedAt: 'desc' },
     });

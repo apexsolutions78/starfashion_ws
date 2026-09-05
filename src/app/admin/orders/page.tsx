@@ -291,23 +291,23 @@ export default function AdminOrdersPage() {
             )}
 
             {/* Payment Summary */}
-            {selectedOrder.payments && (
+            {selectedOrder.payments && selectedOrder.payments.length > 0 && (
               <div className="p-5 border-t border-slate-800">
                 <div className="bg-slate-950/50 rounded-xl p-4 space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-slate-400">Total Paid</span>
                     <span className="text-emerald-400 font-bold">
-                      Rs.{selectedOrder.payments.reduce((sum: number, p: any) => sum + p.amount, 0).toFixed(2)}
+                      Rs.{(selectedOrder.payments || []).reduce((sum: number, p: any) => sum + p.amount, 0).toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Outstanding Balance</span>
                     <span className={`font-bold ${
-                      (selectedOrder.grandTotal - selectedOrder.payments.reduce((sum: number, p: any) => sum + p.amount, 0)) > 0
+                      (selectedOrder.grandTotal - (selectedOrder.payments || []).reduce((sum: number, p: any) => sum + p.amount, 0)) > 0
                         ? 'text-amber-400'
                         : 'text-emerald-400'
                     }`}>
-                      Rs.{(selectedOrder.grandTotal - selectedOrder.payments.reduce((sum: number, p: any) => sum + p.amount, 0)).toFixed(2)}
+                      Rs.{(selectedOrder.grandTotal - (selectedOrder.payments || []).reduce((sum: number, p: any) => sum + p.amount, 0)).toFixed(2)}
                     </span>
                   </div>
                 </div>

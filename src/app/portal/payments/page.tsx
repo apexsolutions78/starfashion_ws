@@ -47,7 +47,7 @@ export default function CustomerPaymentsPage() {
   };
 
   const getBalance = (order: OrderWithPayments) => {
-    const totalPaid = order.payments
+    const totalPaid = (order.payments || [])
       .filter(p => p.status !== 'VOID')
       .reduce((sum, p) => sum + p.amount, 0);
     return order.grandTotal - totalPaid;
