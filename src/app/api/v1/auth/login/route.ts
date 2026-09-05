@@ -31,6 +31,16 @@ export async function POST(req: NextRequest) {
       return ApiUtils.error('User account is suspended or inactive', 403);
     }
 
+    // Check approval status for customer users
+    if (user.userType === 'CUSTOMER' && user.approvalStatus !== 'APPROVED') {
+      if (user.approvalStatus === 'PENDING') {
+        return ApiUtils.error('Your account is pending approval. Please wait for admin approval.', 403);
+      }
+      if (user.approvalStatus === 'REJECTED') {
+        return ApiUtils.error(`Your account has been rejected. ${user.rejectionReason || 'Please contact support.'}`, 403);
+      }
+    }
+
     const isValid = await AuthUtils.comparePassword(parsed.password, user.passwordHash);
     if (!isValid) {
       return ApiUtils.error('Invalid email or password', 401);

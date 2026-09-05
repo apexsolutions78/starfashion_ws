@@ -15,18 +15,20 @@ datasource db {
 // ------------------------------------------------------
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String
-  firstName    String
-  lastName     String
-  phone        String?
-  userType     String   @default("CUSTOMER") // "ADMIN" | "CUSTOMER"
-  role         String?  @default("USER")     // "MASTER_ADMIN" | "ADMIN" | "USER" (for ADMIN users only)
-  status       String   @default("ACTIVE")   // "ACTIVE" | "INACTIVE" | "SUSPENDED"
-  lastLoginAt  DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id               String   @id @default(uuid())
+  email            String   @unique
+  passwordHash     String
+  firstName        String
+  lastName         String
+  phone            String?
+  userType         String   @default("CUSTOMER") // "ADMIN" | "CUSTOMER"
+  role             String?  @default("USER")     // "MASTER_ADMIN" | "ADMIN" | "USER" (for ADMIN users only)
+  status           String   @default("ACTIVE")   // "ACTIVE" | "INACTIVE" | "SUSPENDED"
+  approvalStatus   String   @default("APPROVED") // "PENDING" | "APPROVED" | "REJECTED"
+  rejectionReason  String?
+  lastLoginAt      DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   customerUsers       CustomerUser[]
   recordedPayments    Payment[]            @relation("RecordedPayments")
@@ -40,11 +42,19 @@ model User {
 model CustomerCompany {
   id                 String   @id @default(uuid())
   companyName        String
+  contactName        String?
+  phone              String?
+  city               String?
+  country            String?  @default("Pakistan")
   taxId              String?
   registrationNumber String?
   creditLimit        Float    @default(0.0)
   paymentTermsId     String?
   status             String   @default("ACTIVE") // "ACTIVE" | "SUSPENDED" | "ARCHIVED"
+  onboardingStatus   String   @default("APPROVED") // "PENDING_APPROVAL" | "APPROVED" | "REJECTED"
+  rejectionReason    String?
+  approvedAt         DateTime?
+  approvedByUserId   String?
   notes              String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt

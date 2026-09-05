@@ -72,7 +72,7 @@ async function main() {
 
   const adminUser = await prisma.user.upsert({
     where: { email: 'admin@starfashion.com' },
-    update: { role: 'MASTER_ADMIN' },
+    update: { role: 'MASTER_ADMIN', approvalStatus: 'APPROVED' },
     create: {
       email: 'admin@starfashion.com',
       passwordHash,
@@ -82,12 +82,13 @@ async function main() {
       userType: 'ADMIN',
       role: 'MASTER_ADMIN',
       status: 'ACTIVE',
+      approvalStatus: 'APPROVED',
     },
   });
 
   const customerCompany = await prisma.customerCompany.upsert({
     where: { id: 'company-fashion-retail' },
-    update: {},
+    update: { onboardingStatus: 'APPROVED' },
     create: {
       id: 'company-fashion-retail',
       companyName: 'Fashion Retail House GmbH',
@@ -96,13 +97,14 @@ async function main() {
       creditLimit: 50000.0,
       paymentTermsId: net30.id,
       status: 'ACTIVE',
+      onboardingStatus: 'APPROVED',
       notes: 'Premier wholesale retail partner in Germany',
     },
   });
 
   const customerUser = await prisma.user.upsert({
     where: { email: 'buyer@fashionretail.com' },
-    update: {},
+    update: { approvalStatus: 'APPROVED' },
     create: {
       email: 'buyer@fashionretail.com',
       passwordHash,
@@ -111,6 +113,7 @@ async function main() {
       phone: '+491709876543',
       userType: 'CUSTOMER',
       status: 'ACTIVE',
+      approvalStatus: 'APPROVED',
     },
   });
 

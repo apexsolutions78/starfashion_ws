@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Lock, Mail, ShieldCheck, ShoppingBag, ArrowRight } from 'lucide-react';
+import { Lock, Mail, ShieldCheck, ShoppingBag, ArrowRight, UserPlus } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -114,6 +114,17 @@ export default function LoginPage() {
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
+
+        {/* Register Link */}
+        <div className="mt-4 text-center">
+          <a
+            href="/register"
+            className="text-indigo-400 hover:text-indigo-300 text-sm font-medium flex items-center justify-center space-x-1"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>Create Wholesale Account</span>
+          </a>
+        </div>
 
         {/* Quick Fill Demo Buttons */}
         <div className="mt-8 pt-6 border-t border-slate-800">

@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, Plus, Building2, CreditCard, Edit2, Save, X, FileText, Download, CheckCircle, AlertCircle } from 'lucide-react';
+import { Users, Plus, Building2, CreditCard, Edit2, Save, X, FileText, Download, CheckCircle, AlertCircle, Check, Clock, UserCheck, MapPin, Phone, Mail } from 'lucide-react';
 
 export default function AdminCustomersPage() {
   const [customers, setCustomers] = useState<any[]>([]);
+  const [pendingCustomers, setPendingCustomers] = useState<any[]>([]);
   const [paymentTerms, setPaymentTerms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingCustomer, setEditingCustomer] = useState<any>(null);
@@ -15,6 +16,12 @@ export default function AdminCustomersPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Approval state
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [showRejectModal, setShowRejectModal] = useState<string | null>(null);
+
   // Statement state
   const [showStatement, setShowStatement] = useState(false);
   const [statementCustomer, setStatementCustomer] = useState<any>(null);
@@ -23,6 +30,7 @@ export default function AdminCustomersPage() {
 
   useEffect(() => {
     fetchCustomers();
+    fetchPendingCustomers();
     fetchPaymentTerms();
   }, []);
 
@@ -31,7 +39,7 @@ export default function AdminCustomersPage() {
       const res = await fetch('/api/v1/admin/customers');
       const data = await res.json();
       if (data.success) {
-        setCustomers(data.data);
+        setCustomers(data.data.filter((c: any) => c.onboardingStatus === 'APPROVED'));
       }
     } catch (error) {
       console.error('Error fetching customers:', error);
@@ -40,23 +48,79 @@ export default function AdminCustomersPage() {
     }
   };
 
-  const fetchPaymentTerms = async () => {
+  const fetchPendingCustomers = async () => {
     try {
-      const res = await fetch('/api/v1/admin/pricing-tiers');
+      const res = await fetch('/api/v1/admin/customers');
       const data = await res.json();
       if (data.success) {
-        // Payment terms are stored separately, but we'll use a simple list for now
-        setPaymentTerms([
-          { id: 'net-15', name: 'Net 15', days: 15 },
-          { id: 'net-30', name: 'Net 30', days: 30 },
-          { id: 'net-45', name: 'Net 45', days: 45 },
-          { id: 'net-60', name: 'Net 60', days: 60 },
-          { id: 'net-90', name: 'Net 90', days: 90 },
-          { id: 'cod', name: 'Cash on Delivery', days: 0 },
-        ]);
+        setPendingCustomers(data.data.filter((c: any) => c.onboardingStatus === 'PENDING_APPROVAL'));
       }
     } catch (error) {
-      console.error('Error fetching payment terms:', error);
+      console.error('Error fetching pending customers:', error);
+    }
+  };
+
+  const fetchPaymentTerms = async () => {
+    setPaymentTerms([
+      { id: 'net-15', name: 'Net 15', days: 15 },
+      { id: 'net-30', name: 'Net 30', days: 30 },
+      { id: 'net-45', name: 'Net 45', days: 45 },
+      { id: 'net-60', name: 'Net 60', days: 60 },
+      { id: 'net-90', name: 'Net 90', days: 90 },
+      { id: 'cod', name: 'Cash on Delivery', days: 0 },
+    ]);
+  };
+
+  const handleApprove = async (customerId: string) => {
+    setApprovingId(customerId);
+    try {
+      const res = await fetch(`/api/v1/admin/customers/${customerId}/approval`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ creditLimit: 0, paymentTermsId: 'net-30' }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setSuccessMessage('Customer approved successfully');
+        fetchCustomers();
+        fetchPendingCustomers();
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        setErrorMessage(data.error || 'Failed to approve customer');
+      }
+    } catch (error) {
+      console.error('Error approving customer:', error);
+      setErrorMessage('Failed to approve customer');
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
+  const handleReject = async (customerId: string) => {
+    setRejectingId(customerId);
+    try {
+      const res = await fetch(`/api/v1/admin/customers/${customerId}/approval`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rejectionReason: rejectReason || 'Registration rejected' }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setSuccessMessage('Customer rejected');
+        fetchPendingCustomers();
+        setShowRejectModal(null);
+        setRejectReason('');
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        setErrorMessage(data.error || 'Failed to reject customer');
+      }
+    } catch (error) {
+      console.error('Error rejecting customer:', error);
+      setErrorMessage('Failed to reject customer');
+    } finally {
+      setRejectingId(null);
     }
   };
 
@@ -122,7 +186,6 @@ export default function AdminCustomersPage() {
   const handleDownloadStatement = () => {
     if (!statementData || !statementCustomer) return;
 
-    // Generate CSV content
     const headers = ['Date', 'Description', 'Debit', 'Credit', 'Balance'];
     const rows = statementData.transactions.map((tx: any) => [
       new Date(tx.createdAt).toLocaleDateString(),
@@ -180,6 +243,69 @@ export default function AdminCustomersPage() {
         </div>
       )}
 
+      {/* Pending Approvals Section */}
+      {pendingCustomers.length > 0 && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <Clock className="w-5 h-5 text-amber-400" />
+            <h2 className="text-lg font-bold text-amber-300">Pending Approvals ({pendingCustomers.length})</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {pendingCustomers.map((c) => (
+              <div key={c.id} className="bg-slate-900 border border-amber-500/30 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Building2 className="w-5 h-5 text-amber-400" />
+                    <span className="font-bold text-white">{c.companyName}</span>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    PENDING
+                  </span>
+                </div>
+                <div className="text-xs text-slate-400 space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <UserCheck className="w-3.5 h-3.5" />
+                    <span>{c.contactName || 'N/A'}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Phone className="w-3.5 h-3.5" />
+                    <span>{c.phone || 'N/A'}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <MapPin className="w-3.5 h-3.5" />
+                    <span>{c.city}, {c.country}</span>
+                  </div>
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleApprove(c.id)}
+                    disabled={approvingId === c.id}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2 rounded-lg transition-colors flex items-center justify-center space-x-1 disabled:opacity-50"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>{approvingId === c.id ? 'Approving...' : 'Approve'}</span>
+                  </button>
+                  <button
+                    onClick={() => setShowRejectModal(c.id)}
+                    disabled={rejectingId === c.id}
+                    className="flex-1 bg-red-600 hover:bg-red-500 text-white text-xs font-bold py-2 rounded-lg transition-colors flex items-center justify-center space-x-1 disabled:opacity-50"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>Reject</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Approved Customers */}
+      <div className="flex items-center space-x-2">
+        <UserCheck className="w-5 h-5 text-emerald-400" />
+        <h2 className="text-lg font-bold text-white">Approved Customers ({customers.length})</h2>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {customers.map((c) => (
           <div key={c.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md space-y-4">
@@ -188,7 +314,7 @@ export default function AdminCustomersPage() {
                 <Building2 className="w-6 h-6 text-indigo-400" />
                 <div>
                   <h3 className="font-bold text-white text-base">{c.companyName}</h3>
-                  <div className="text-[11px] text-slate-400">Tax ID: {c.taxId || 'N/A'} | Reg: {c.registrationNumber || 'N/A'}</div>
+                  <div className="text-[11px] text-slate-400">{c.contactName} | {c.city}, {c.country}</div>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
@@ -228,10 +354,7 @@ export default function AdminCustomersPage() {
                 <span>View Statement</span>
               </button>
               <button
-                onClick={() => {
-                  handleViewStatement(c);
-                  // Download will be triggered after statement loads
-                }}
+                onClick={() => handleViewStatement(c)}
                 className="flex-1 bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium py-2 rounded-lg transition-colors flex items-center justify-center space-x-1"
               >
                 <Download className="w-3.5 h-3.5" />
@@ -312,6 +435,48 @@ export default function AdminCustomersPage() {
         </div>
       )}
 
+      {/* Reject Modal */}
+      {showRejectModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-md w-full">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-white">Reject Customer</h3>
+              <button onClick={() => { setShowRejectModal(null); setRejectReason(''); }} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-xs font-medium text-slate-300 mb-2">Reason for Rejection</label>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                rows={3}
+                className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-4 py-2 text-slate-100 text-sm focus:outline-none focus:border-red-500"
+                placeholder="Optional: Enter reason for rejection"
+              />
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => { setShowRejectModal(null); setRejectReason(''); }}
+                className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleReject(showRejectModal)}
+                disabled={rejectingId === showRejectModal}
+                className="flex-1 bg-red-600 hover:bg-red-500 text-white py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2 disabled:opacity-50"
+              >
+                <X className="w-4 h-4" />
+                <span>{rejectingId === showRejectModal ? 'Rejecting...' : 'Reject'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Statement Modal */}
       {showStatement && statementCustomer && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -343,7 +508,6 @@ export default function AdminCustomersPage() {
                 </div>
               ) : statementData ? (
                 <div className="space-y-4">
-                  {/* Summary */}
                   <div className="grid grid-cols-3 gap-3 text-sm">
                     <div className="bg-slate-950/50 rounded-lg p-3 text-center">
                       <div className="text-slate-500 text-xs">Opening Balance</div>
@@ -359,7 +523,6 @@ export default function AdminCustomersPage() {
                     </div>
                   </div>
 
-                  {/* Transactions */}
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="border-b border-slate-800 text-slate-400">
