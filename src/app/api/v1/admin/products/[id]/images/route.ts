@@ -32,9 +32,20 @@ export async function POST(
 
     const formData = await request.formData();
     const files = formData.getAll('images') as File[];
+    const variantId = formData.get('variantId') as string | null;
 
     if (!files || files.length === 0) {
       return ApiUtils.error('No images provided');
+    }
+
+    // Validate variantId if provided
+    if (variantId) {
+      const variant = await prisma.productVariant.findUnique({
+        where: { id: variantId },
+      });
+      if (!variant || variant.productId !== id) {
+        return ApiUtils.error('Invalid variant selected');
+      }
     }
 
     if (files.length > 10) {
@@ -87,6 +98,7 @@ export async function POST(
       const image = await prisma.productImage.create({
         data: {
           productId: id,
+          variantId: variantId || null,
           imagePath,
           isPrimary: existingImageCount === 0,
           sortOrder: existingImageCount,

@@ -118,6 +118,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const [pendingNormalFiles, setPendingNormalFiles] = useState<File[]>([]);
   const [showOversizedConfirm, setShowOversizedConfirm] = useState(false);
 
+  // Color selection for image upload
+  const [selectedColorId, setSelectedColorId] = useState<string>('');
+
   useEffect(() => {
     fetchProduct();
   }, [id]);
@@ -249,6 +252,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
       const formData = new FormData();
       for (const file of files) {
         formData.append('images', file);
+      }
+      if (selectedColorId) {
+        formData.append('variantId', selectedColorId);
       }
 
       const res = await fetch(`/api/v1/admin/products/${id}/images`, {
@@ -563,6 +569,25 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
               </div>
             </div>
 
+            {/* Color Selection */}
+            {variants.length > 0 && (
+              <div className="mb-4">
+                <label className="block text-xs font-medium text-slate-300 mb-2">Assign to Color</label>
+                <select
+                  value={selectedColorId}
+                  onChange={(e) => setSelectedColorId(e.target.value)}
+                  className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-4 py-2 text-slate-100 text-sm focus:outline-none focus:border-emerald-500"
+                >
+                  <option value="">No color (general image)</option>
+                  {[...new Map(variants.map(v => [v.colorId, v.color])).values()].map((color: any) => (
+                    <option key={color.id} value={variants.find(v => v.colorId === color.id)?.id}>
+                      {color.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {/* Upload Area */}
             <div className="mb-4">
               <input
@@ -645,9 +670,20 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-slate-400 truncate">{image.imagePath.split('/').pop()}</p>
-                      {image.isPrimary && (
-                        <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">Primary</span>
-                      )}
+                      <div className="flex items-center space-x-1 mt-0.5">
+                        {image.variant?.color && (
+                          <span className="flex items-center text-[10px] bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded-full">
+                            <span
+                              className="w-2 h-2 rounded-full mr-1 border border-slate-600"
+                              style={{ backgroundColor: image.variant.color.hexCode }}
+                            />
+                            {image.variant.color.name}
+                          </span>
+                        )}
+                        {image.isPrimary && (
+                          <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">Primary</span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex space-x-1">
                       {!image.isPrimary && (
