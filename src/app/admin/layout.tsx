@@ -13,6 +13,7 @@ import {
   LogOut,
   ShoppingBag,
   Tags,
+  UserCog,
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -46,6 +47,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: '/admin/payments', label: 'Record Payments', icon: CreditCard },
     { href: '/admin/customers', label: 'Customers & Credit', icon: Users },
     { href: '/admin/audit-logs', label: 'Audit Trail', icon: ShieldAlert },
+    { href: '/admin/profile', label: 'Admin Profile', icon: UserCog },
   ];
 
   return (
@@ -88,10 +90,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         <div className="pt-6 border-t border-slate-800 flex items-center justify-between">
-          <div className="text-xs">
-            <div className="font-semibold text-slate-300 truncate w-36">{session?.email}</div>
+          <Link href="/admin/profile" className="text-xs hover:bg-slate-800 p-2 rounded-lg transition-colors flex-1 min-w-0">
+            <div className="font-semibold text-slate-300 truncate">{session?.email}</div>
             <div className="text-[10px] text-slate-500">Master Admin</div>
-          </div>
+          </Link>
 
           <button
             onClick={handleLogout}
