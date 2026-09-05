@@ -214,9 +214,9 @@ export default function AdminOrdersPage() {
                         <span className="text-slate-500 ml-1">({item.variant?.color?.name} / {item.variant?.size?.name})</span>
                       </td>
                       <td className="py-2 text-center text-slate-300">{item.quantity}</td>
-                      <td className="py-2 text-right text-slate-300">Rs.{item.baseUnitPriceSnapshot.toFixed(2)}</td>
-                      <td className="py-2 text-right text-amber-400">-Rs.{item.lineDiscount.toFixed(2)}</td>
-                      <td className="py-2 text-right text-emerald-400 font-bold">Rs.{item.lineNet.toFixed(2)}</td>
+                      <td className="py-2 text-right text-slate-300">Rs.{(item.baseUnitPriceSnapshot || 0).toFixed(2)}</td>
+                      <td className="py-2 text-right text-amber-400">-Rs.{(item.lineDiscount || 0).toFixed(2)}</td>
+                      <td className="py-2 text-right text-emerald-400 font-bold">Rs.{(item.lineNet || 0).toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -228,17 +228,17 @@ export default function AdminOrdersPage() {
               <div className="bg-slate-950/50 rounded-xl p-4 space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-slate-400">Gross Subtotal</span>
-                  <span className="text-white">Rs.{selectedOrder.grossSubtotal.toFixed(2)}</span>
+                  <span className="text-white">Rs.{(selectedOrder.grossSubtotal || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Tier Discount ({selectedOrder.tierDiscountPct}%)</span>
-                  <span className="text-amber-400">-Rs.{selectedOrder.discountTotal.toFixed(2)}</span>
+                  <span className="text-slate-400">Tier Discount ({selectedOrder.tierDiscountPct || 0}%)</span>
+                  <span className="text-amber-400">-Rs.{(selectedOrder.discountTotal || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400">Net Subtotal</span>
-                  <span className="text-white">Rs.{selectedOrder.netSubtotal.toFixed(2)}</span>
+                  <span className="text-white">Rs.{(selectedOrder.netSubtotal || 0).toFixed(2)}</span>
                 </div>
-                {selectedOrder.roundingAdjustment !== 0 && (
+                {selectedOrder.roundingAdjustment != null && selectedOrder.roundingAdjustment !== 0 && (
                   <div className="flex justify-between">
                     <span className="text-slate-400">Rounding</span>
                     <span className="text-slate-300">Rs.{selectedOrder.roundingAdjustment.toFixed(2)}</span>
@@ -246,7 +246,7 @@ export default function AdminOrdersPage() {
                 )}
                 <div className="flex justify-between pt-2 border-t border-slate-800">
                   <span className="text-white font-bold">Grand Total</span>
-                  <span className="text-emerald-400 font-bold text-lg">Rs.{selectedOrder.grandTotal.toFixed(2)}</span>
+                  <span className="text-emerald-400 font-bold text-lg">Rs.{(selectedOrder.grandTotal || 0).toFixed(2)}</span>
                 </div>
               </div>
             </div>
