@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Plus, Search, Edit2, Trash2, Eye, EyeOff, Package, Image as ImageIcon } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Package, Image as ImageIcon, Download, Upload, FileText, X, CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -12,6 +12,10 @@ export default function AdminProductsPage() {
   const [categories, setCategories] = useState<any[]>([]);
   const [collections, setCollections] = useState<any[]>([]);
   const [deleteModal, setDeleteModal] = useState<string | null>(null);
+  const [importModal, setImportModal] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchProducts();
@@ -76,6 +80,66 @@ export default function AdminProductsPage() {
     return { totalStock, totalReserved, available: totalStock - totalReserved };
   };
 
+  const handleDownloadTemplate = async () => {
+    try {
+      const res = await fetch('/api/v1/admin/products/import/template');
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'product-import-template.csv';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
+    } catch (error) {
+      console.error('Error downloading template:', error);
+      alert('Failed to download template');
+    }
+  };
+
+  const handleImportClick = () => {
+    setImportResult(null);
+    setImportModal(true);
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    setImportResult(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/v1/admin/products/import', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setImportResult(data.data);
+        fetchProducts();
+      } else {
+        setImportResult({ error: data.error });
+      }
+    } catch (error) {
+      console.error('Error importing products:', error);
+      setImportResult({ error: 'Failed to import products' });
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -83,13 +147,29 @@ export default function AdminProductsPage() {
           <h1 className="text-2xl font-bold text-white">Product Management</h1>
           <p className="text-slate-400 text-sm mt-1">Manage your wholesale product catalogue</p>
         </div>
-        <Link
-          href="/admin/products/new"
-          className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add Product</span>
-        </Link>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={handleDownloadTemplate}
+            className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            <span>Download Template</span>
+          </button>
+          <button
+            onClick={handleImportClick}
+            className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 transition-colors"
+          >
+            <Upload className="w-4 h-4" />
+            <span>Import CSV</span>
+          </button>
+          <Link
+            href="/admin/products/new"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Product</span>
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}
@@ -249,6 +329,138 @@ export default function AdminProductsPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Import Modal */}
+      {importModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-lg w-full">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-white">Import Products from CSV</h3>
+              <button
+                onClick={() => setImportModal(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {!importResult ? (
+              <>
+                <div className="mb-4">
+                  <p className="text-slate-400 text-sm mb-4">
+                    Upload a CSV file with product data. Each row represents one variant (color + size combination).
+                  </p>
+                  <div className="bg-slate-950/50 rounded-lg p-4 mb-4">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <FileText className="w-8 h-8 text-indigo-400" />
+                      <div>
+                        <p className="text-white text-sm font-medium">CSV File</p>
+                        <p className="text-slate-500 text-xs">Format: .csv only</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleDownloadTemplate}
+                      className="text-indigo-400 hover:text-indigo-300 text-sm flex items-center space-x-1"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>Download template first</span>
+                    </button>
+                  </div>
+
+                  <label className="block w-full border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-lg p-6 text-center cursor-pointer transition-colors">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".csv"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      disabled={importing}
+                    />
+                    {importing ? (
+                      <div className="flex flex-col items-center">
+                        <div className="animate-spin w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full mb-2"></div>
+                        <span className="text-slate-400 text-sm">Importing...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <Upload className="w-8 h-8 text-slate-500 mx-auto mb-2" />
+                        <span className="text-slate-400 text-sm">Click to select CSV file</span>
+                      </>
+                    )}
+                  </label>
+                </div>
+
+                <div className="bg-slate-950/50 rounded-lg p-4">
+                  <h4 className="text-white text-sm font-medium mb-2">Expected Format:</h4>
+                  <div className="text-xs text-slate-400 space-y-1">
+                    <p>• Article Number, Name, Slug, Description</p>
+                    <p>• Category, Collection, Base Price</p>
+                    <p>• Color, Size, SKU (optional), Stock</p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div>
+                {importResult.error ? (
+                  <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-4">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <AlertCircle className="w-5 h-5 text-red-400" />
+                      <span className="text-red-400 font-medium">Import Failed</span>
+                    </div>
+                    <p className="text-red-300 text-sm">{importResult.error}</p>
+                  </div>
+                ) : (
+                  <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4 mb-4">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <CheckCircle className="w-5 h-5 text-emerald-400" />
+                      <span className="text-emerald-400 font-medium">Import Completed</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <span className="text-slate-400">Total Rows:</span>
+                        <span className="text-white ml-2 font-bold">{importResult.total}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400">Products Created:</span>
+                        <span className="text-emerald-400 ml-2 font-bold">{importResult.created}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400">Variants Created:</span>
+                        <span className="text-emerald-400 ml-2 font-bold">{importResult.variantsCreated}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400">Skipped:</span>
+                        <span className="text-amber-400 ml-2 font-bold">{importResult.skipped}</span>
+                      </div>
+                    </div>
+
+                    {importResult.errors && importResult.errors.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-slate-400 text-xs mb-2">Errors:</p>
+                        <div className="bg-slate-950/50 rounded p-2 max-h-32 overflow-y-auto">
+                          {importResult.errors.map((err: string, idx: number) => (
+                            <p key={idx} className="text-red-300 text-xs">{err}</p>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <button
+                  onClick={() => {
+                    setImportModal(false);
+                    setImportResult(null);
+                  }}
+                  className="w-full bg-slate-800 hover:bg-slate-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
