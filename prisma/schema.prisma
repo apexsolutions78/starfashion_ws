@@ -1,0 +1,533 @@
+// StarFashion Wholesale Portal Prisma Schema
+// Production relational schema supporting multi-tenancy, historical pricing snapshots, and customer ledger.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------
+// User & Authentication Models
+// ------------------------------------------------------
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  phone        String?
+  userType     String   @default("CUSTOMER") // "ADMIN" | "CUSTOMER"
+  status       String   @default("ACTIVE")   // "ACTIVE" | "INACTIVE" | "SUSPENDED"
+  lastLoginAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  customerUsers       CustomerUser[]
+  recordedPayments    Payment[]            @relation("RecordedPayments")
+  createdTransactions AccountTransaction[] @relation("CreatedTransactions")
+  auditLogs           AuditLog[]
+  systemSettings      SystemSetting[]      @relation("UpdatedSettings")
+
+  @@map("users")
+}
+
+model CustomerCompany {
+  id                 String   @id @default(uuid())
+  companyName        String
+  taxId              String?
+  registrationNumber String?
+  creditLimit        Float    @default(0.0)
+  paymentTermsId     String?
+  status             String   @default("ACTIVE") // "ACTIVE" | "SUSPENDED" | "ARCHIVED"
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  paymentTerms        PaymentTerm?         @relation(fields: [paymentTermsId], references: [id])
+  customerUsers       CustomerUser[]
+  addresses           Address[]
+  carts               Cart[]
+  orders              Order[]
+  invoices            Invoice[]
+  payments            Payment[]
+  accountTransactions AccountTransaction[]
+  creditNotes         CreditNote[]
+
+  @@map("customer_companies")
+}
+
+model CustomerUser {
+  id         String   @id @default(uuid())
+  customerId String
+  userId     String
+  role       String   @default("BUYER") // "OWNER" | "BUYER" | "VIEWER"
+  createdAt  DateTime @default(now())
+
+  customer CustomerCompany @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, userId])
+  @@map("customer_users")
+}
+
+model Address {
+  id           String   @id @default(uuid())
+  customerId   String
+  type         String   @default("SHIPPING") // "BILLING" | "SHIPPING"
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  state        String?
+  postalCode   String
+  country      String   @default("Germany")
+  contactName  String
+  contactPhone String?
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  customer CustomerCompany @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("addresses")
+}
+
+model PaymentTerm {
+  id          String   @id @default(uuid())
+  name        String   // e.g. "Net 30", "Net 60", "Immediate"
+  daysDue     Int      @default(30)
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  companies CustomerCompany[]
+
+  @@map("payment_terms")
+}
+
+// ------------------------------------------------------
+// Product Catalogue & Inventory Models
+// ------------------------------------------------------
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  parentId  String?
+  sortOrder Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+  products Product[]
+
+  @@map("categories")
+}
+
+model Collection {
+  id        String   @id @default(uuid())
+  name      String
+  season    String?  // e.g. "SS2026", "FW2026"
+  year      Int?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products Product[]
+
+  @@map("collections")
+}
+
+model Product {
+  id            String   @id @default(uuid())
+  articleNumber String   @unique
+  name          String
+  slug          String   @unique
+  description   String?
+  categoryId    String
+  collectionId  String?
+  basePrice     Float    // Wholesale base price (HS price baseline)
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  category   Category     @relation(fields: [categoryId], references: [id])
+  collection Collection?  @relation(fields: [collectionId], references: [id])
+  variants   ProductVariant[]
+  images     ProductImage[]
+
+  @@map("products")
+}
+
+model Color {
+  id        String   @id @default(uuid())
+  name      String
+  hexCode   String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  variants ProductVariant[]
+
+  @@map("colors")
+}
+
+model Size {
+  id        String   @id @default(uuid())
+  name      String   // e.g. "S", "M", "L", "XL", "38", "40"
+  sortOrder Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  variants ProductVariant[]
+
+  @@map("sizes")
+}
+
+model ProductVariant {
+  id        String   @id @default(uuid())
+  productId String
+  colorId   String
+  sizeId    String
+  sku       String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product   Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  color     Color        @relation(fields: [colorId], references: [id])
+  size      Size         @relation(fields: [sizeId], references: [id])
+  inventory Inventory[]
+  cartItems CartItem[]
+  orderItems OrderItem[]
+  images    ProductImage[]
+
+  @@unique([productId, colorId, sizeId])
+  @@map("product_variants")
+}
+
+model ProductImage {
+  id        String   @id @default(uuid())
+  productId String
+  variantId String?
+  imagePath String
+  sortOrder Int      @default(0)
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  product Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@map("product_images")
+}
+
+model InventoryLocation {
+  id        String   @id @default(uuid())
+  name      String
+  code      String   @unique
+  address   String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  inventory Inventory[]
+
+  @@map("inventory_locations")
+}
+
+model Inventory {
+  id           String   @id @default(uuid())
+  variantId    String
+  locationId   String
+  onHand       Int      @default(0)
+  reserved     Int      @default(0)
+  reorderLevel Int      @default(10)
+  updatedAt    DateTime @updatedAt
+
+  variant  ProductVariant    @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  location InventoryLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([variantId, locationId])
+  @@map("inventory")
+}
+
+// ------------------------------------------------------
+// Configurable Pricing Tiers
+// ------------------------------------------------------
+
+model PricingTier {
+  id              String   @id @default(uuid())
+  name            String   // e.g. "Tier 1 (30+)", "Tier 2 (70+)", "Tier 3 (101+)"
+  minQuantity     Int      @unique
+  discountPercent Float    // e.g. 10.0, 12.0, 15.0
+  active          Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("pricing_tiers")
+}
+
+// ------------------------------------------------------
+// Cart & Order Models
+// ------------------------------------------------------
+
+model Cart {
+  id         String   @id @default(uuid())
+  customerId String   @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  customer CustomerCompany @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  items    CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  cartId    String
+  variantId String
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cart    Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  variant ProductVariant @relation(fields: [variantId], references: [id])
+
+  @@unique([cartId, variantId])
+  @@map("cart_items")
+}
+
+model Order {
+  id                      String    @id @default(uuid())
+  orderNumber             String    @unique
+  customerId              String
+  status                  String    @default("SUBMITTED") // "DRAFT" | "SUBMITTED" | "CONFIRMED" | "PROCESSING" | "PACKED" | "SHIPPED" | "COMPLETED" | "CANCELLED" | "ON_HOLD"
+  qualifyingQty           Int
+  tierIdSnapshot          String?
+  discountPercentSnapshot Float     @default(0.0)
+  grossSubtotal           Float
+  discountTotal           Float
+  netSubtotal             Float
+  shippingTotal           Float     @default(0.0)
+  taxTotal                Float     @default(0.0)
+  grandTotal              Float
+  currency                String    @default("EUR")
+  notes                   String?
+  createdByUserId         String?
+  submittedAt             DateTime  @default(now())
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  customer CustomerCompany @relation(fields: [customerId], references: [id])
+  items    OrderItem[]
+  invoice  Invoice?
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id                     String   @id @default(uuid())
+  orderId                String
+  variantId              String
+  articleNumberSnapshot  String
+  productNameSnapshot    String
+  skuSnapshot            String
+  colorSnapshot          String
+  sizeSnapshot           String
+  baseUnitPriceSnapshot  Float
+  quantity               Int
+  lineGross              Float
+  lineDiscount           Float
+  lineNet                Float
+  createdAt              DateTime @default(now())
+
+  order   Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variant ProductVariant @relation(fields: [variantId], references: [id])
+
+  @@map("order_items")
+}
+
+// ------------------------------------------------------
+// Financial Invoicing, Payments & Ledger Models
+// ------------------------------------------------------
+
+model Invoice {
+  id            String   @id @default(uuid())
+  invoiceNumber String   @unique
+  customerId    String
+  orderId       String   @unique
+  issueDate     DateTime @default(now())
+  dueDate       DateTime
+  status        String   @default("UNPAID") // "UNPAID" | "PARTIALLY_PAID" | "PAID" | "OVERDUE" | "VOID"
+  subtotal      Float
+  taxTotal      Float    @default(0.0)
+  shippingTotal Float    @default(0.0)
+  totalAmount   Float
+  paidAmount    Float    @default(0.0)
+  balanceDue    Float
+  currency      String   @default("EUR")
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  customer    CustomerCompany     @relation(fields: [customerId], references: [id])
+  order       Order               @relation(fields: [orderId], references: [id])
+  items       InvoiceItem[]
+  allocations PaymentAllocation[]
+  creditNotes CreditNote[]
+
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id                  String @id @default(uuid())
+  invoiceId           String
+  descriptionSnapshot String
+  quantity            Int
+  unitPrice           Float
+  lineDiscount        Float  @default(0.0)
+  lineTotal           Float
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("invoice_items")
+}
+
+model Payment {
+  id               String   @id @default(uuid())
+  paymentNumber    String   @unique
+  customerId       String
+  amount           Float
+  paymentDate      DateTime @default(now())
+  paymentMethod    String   @default("BANK_TRANSFER") // "BANK_TRANSFER" | "CHEQUE" | "CREDIT_CARD" | "CASH" | "OTHER"
+  referenceNumber  String?
+  status           String   @default("POSTED")        // "POSTED" | "VOID" | "PENDING"
+  notes            String?
+  recordedByUserId String?
+  createdAt        DateTime @default(now())
+
+  customer    CustomerCompany     @relation(fields: [customerId], references: [id])
+  recordedBy  User?               @relation("RecordedPayments", fields: [recordedByUserId], references: [id])
+  allocations PaymentAllocation[]
+
+  @@map("payments")
+}
+
+model PaymentAllocation {
+  id        String   @id @default(uuid())
+  paymentId String
+  invoiceId String
+  amount    Float
+  createdAt DateTime @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("payment_allocations")
+}
+
+model AccountTransaction {
+  id              String   @id @default(uuid())
+  customerId      String
+  transactionType String   // "INVOICE" | "PAYMENT" | "CREDIT_NOTE" | "ADJUSTMENT"
+  referenceType   String?  // "Invoice" | "Payment" | "CreditNote"
+  referenceId     String?
+  debit           Float    @default(0.0)
+  credit          Float    @default(0.0)
+  postedAt        DateTime @default(now())
+  runningBalance  Float
+  notes           String?
+  createdByUserId String?
+
+  customer  CustomerCompany @relation(fields: [customerId], references: [id])
+  createdBy User?            @relation("CreatedTransactions", fields: [createdByUserId], references: [id])
+
+  @@map("account_transactions")
+}
+
+model CreditNote {
+  id               String   @id @default(uuid())
+  creditNoteNumber String   @unique
+  customerId       String
+  invoiceId        String?
+  amount           Float
+  reason           String
+  status           String   @default("ISSUED") // "ISSUED" | "APPLIED" | "VOID"
+  createdAt        DateTime @default(now())
+
+  customer CustomerCompany @relation(fields: [customerId], references: [id])
+  invoice  Invoice?         @relation(fields: [invoiceId], references: [id])
+
+  @@map("credit_notes")
+}
+
+// ------------------------------------------------------
+// Role-Based Authorization & Audit Trail
+// ------------------------------------------------------
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique // "MASTER_ADMIN" | "SALES_ADMIN" | "ACCOUNTS_ADMIN" | "WAREHOUSE_ADMIN"
+  description String?
+
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  code        String   @unique // e.g. "catalog:read", "finance:write", "tiers:manage"
+  description String?
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?
+  actorEmail String
+  action     String   // e.g. "TIER_UPDATED", "PAYMENT_RECORDED", "ORDER_STATUS_CHANGED"
+  entityType String   // e.g. "PricingTier", "Payment", "Order"
+  entityId   String
+  beforeJson String?
+  afterJson  String?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
+
+model SystemSetting {
+  key             String   @id
+  value           String
+  dataType        String   @default("STRING") // "STRING" | "NUMBER" | "BOOLEAN" | "JSON"
+  description     String?
+  updatedByUserId String?
+  updatedAt       DateTime @updatedAt
+
+  updatedBy User? @relation("UpdatedSettings", fields: [updatedByUserId], references: [id])
+
+  @@map("system_settings")
+}

@@ -1,0 +1,41 @@
+# node_modules
+node_modules/
+.pnpm-store/
+
+# Next.js build outputs
+.next/
+out/
+build/
+dist/
+
+# Environment variables
+.env
+.env*.local
+.env.production
+.env.staging
+
+# Prisma
+prisma/dev.db
+prisma/dev.db-journal
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS & IDE metadata
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Temporary / Scratch
+extracted_spec.txt
+scratch/
