@@ -32,21 +32,25 @@ function parseCSV(csvContent: string): ProductRow[] {
 
     const columns = line.split(',').map(col => col.trim().replace(/^"|"$/g, ''));
 
+    // Support both old format (11 cols with slug) and new format (10 cols without slug)
     if (columns.length < 10) continue;
 
-    const stockValue = parseInt(columns[9]) || 0;
+    const hasSlug = columns.length >= 11;
+    const offset = hasSlug ? 1 : 0; // Skip slug column if present
+
+    const stockValue = parseInt(columns[9 + offset]) || 0;
     if (stockValue < 0) continue;
 
     rows.push({
       articleNumber: columns[0],
       name: columns[1],
-      description: columns[2],
-      categoryName: columns[3],
-      collectionName: columns[4],
-      basePrice: parseFloat(columns[5]) || 0,
-      colorName: columns[6],
-      sizeName: columns[7],
-      sku: columns[8],
+      description: hasSlug ? columns[3] : columns[2],
+      categoryName: hasSlug ? columns[4] : columns[3],
+      collectionName: hasSlug ? columns[5] : columns[4],
+      basePrice: parseFloat(hasSlug ? columns[6] : columns[5]) || 0,
+      colorName: hasSlug ? columns[7] : columns[6],
+      sizeName: hasSlug ? columns[8] : columns[7],
+      sku: hasSlug ? columns[9] : columns[8],
       stock: stockValue,
     });
   }
