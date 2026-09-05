@@ -5,6 +5,86 @@ import { useRouter } from 'next/navigation';
 import { Save, ArrowLeft, Upload, X, Plus, Trash2, Image as ImageIcon, FolderOpen, AlertCircle, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 
+const MAX_PIXELS = 5 * 1024 * 1024; // 5 megapixels
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
+const MAX_FILES = 10;
+
+interface PendingFile {
+  file: File;
+  name: string;
+  size: number;
+  width: number;
+  height: number;
+  megapixels: number;
+}
+
+function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    img.onload = () => {
+      resolve({ width: img.width, height: img.height });
+      URL.revokeObjectURL(img.src);
+    };
+    img.onerror = () => resolve({ width: 0, height: 0 });
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+function compressImage(file: File, targetWidth: number, targetHeight: number): Promise<File> {
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+      }
+
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            const compressedFile = new File([blob], file.name, {
+              type: file.type === 'image/png' ? 'image/png' : 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          } else {
+            resolve(file);
+          }
+        },
+        file.type === 'image/png' ? 'image/png' : 'image/jpeg',
+        0.85
+      );
+
+      URL.revokeObjectURL(img.src);
+    };
+    img.onerror = () => resolve(file);
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+function calculateTargetDimensions(width: number, height: number): { width: number; height: number } {
+  const ratio = width / height;
+  const targetPixels = 5 * 1024 * 1024;
+
+  let newWidth: number;
+  let newHeight: number;
+
+  if (ratio >= 1) {
+    newWidth = Math.round(Math.sqrt(targetPixels * ratio));
+    newHeight = Math.round(newWidth / ratio);
+  } else {
+    newHeight = Math.round(Math.sqrt(targetPixels / ratio));
+    newWidth = Math.round(newHeight * ratio);
+  }
+
+  return { width: newWidth, height: newHeight };
+}
+
 export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
@@ -33,9 +113,10 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-  const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
-  const MAX_FILES = 10;
+  // Oversized image confirmation state
+  const [pendingOversizedFiles, setPendingOversizedFiles] = useState<PendingFile[]>([]);
+  const [pendingNormalFiles, setPendingNormalFiles] = useState<File[]>([]);
+  const [showOversizedConfirm, setShowOversizedConfirm] = useState(false);
 
   useEffect(() => {
     fetchProduct();
@@ -109,6 +190,37 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     }
   };
 
+  const processFiles = async (files: File[]) => {
+    const oversized: PendingFile[] = [];
+    const normal: File[] = [];
+
+    for (const file of files) {
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        setUploadError(`"${file.name}" is not a JPEG/PNG image`);
+        continue;
+      }
+
+      const { width, height } = await getImageDimensions(file);
+      const megapixels = (width * height) / (1024 * 1024);
+      const exceedsMP = megapixels > 5;
+      const exceedsSize = file.size > MAX_FILE_SIZE;
+
+      if (exceedsMP || exceedsSize) {
+        oversized.push({ file, name: file.name, size: file.size, width, height, megapixels });
+      } else {
+        normal.push(file);
+      }
+    }
+
+    if (oversized.length > 0) {
+      setPendingOversizedFiles(oversized);
+      setPendingNormalFiles(normal);
+      setShowOversizedConfirm(true);
+    } else if (normal.length > 0) {
+      await uploadFiles(normal);
+    }
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -116,45 +228,26 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     setUploadError(null);
     setUploadSuccess(null);
 
-    // Validate file count
     if (files.length > MAX_FILES) {
       setUploadError(`Maximum ${MAX_FILES} files allowed at once`);
       return;
     }
 
-    // Validate each file
-    const validFiles: File[] = [];
-    const errors: string[] = [];
+    await processFiles(Array.from(files));
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-
-      if (!ALLOWED_TYPES.includes(file.type)) {
-        errors.push(`"${file.name}" is not a JPEG/PNG image`);
-        continue;
-      }
-
-      if (file.size > MAX_FILE_SIZE) {
-        const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-        errors.push(`"${file.name}" exceeds 5MB limit (${sizeMB}MB)`);
-        continue;
-      }
-
-      validFiles.push(file);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
+  };
 
-    if (errors.length > 0) {
-      setUploadError(errors.join('. '));
-    }
-
-    if (validFiles.length === 0) {
-      return;
-    }
-
+  const uploadFiles = async (files: File[]) => {
     setUploading(true);
+    setUploadError(null);
+    setUploadSuccess(null);
+
     try {
       const formData = new FormData();
-      for (const file of validFiles) {
+      for (const file of files) {
         formData.append('images', file);
       }
 
@@ -177,7 +270,31 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
       setUploadError('Failed to upload images');
     } finally {
       setUploading(false);
-      e.target.value = '';
+    }
+  };
+
+  const handleOversizedConfirm = async (compress: boolean) => {
+    setShowOversizedConfirm(false);
+
+    let filesToUpload: File[] = [...pendingNormalFiles];
+
+    if (compress) {
+      for (const pending of pendingOversizedFiles) {
+        const { width: targetW, height: targetH } = calculateTargetDimensions(pending.width, pending.height);
+        const compressed = await compressImage(pending.file, targetW, targetH);
+        filesToUpload.push(compressed);
+      }
+    } else {
+      // Skip oversized files
+      const skippedNames = pendingOversizedFiles.map(f => f.name);
+      setUploadError(`Skipped oversized images: ${skippedNames.join(', ')}`);
+    }
+
+    setPendingOversizedFiles([]);
+    setPendingNormalFiles([]);
+
+    if (filesToUpload.length > 0) {
+      await uploadFiles(filesToUpload);
     }
   };
 
@@ -207,8 +324,6 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   };
 
   const handleSetPrimaryImage = async (imageId: string) => {
-    // This would require an additional API endpoint to update image
-    // For now, we'll just update the local state
     setImages(images.map(img => ({
       ...img,
       isPrimary: img.id === imageId,
@@ -440,9 +555,10 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                   <ul className="space-y-0.5 text-amber-200/80">
                     <li>• Format: <strong>JPEG (.jpg)</strong> or <strong>PNG (.png)</strong> only</li>
                     <li>• Maximum size: <strong>5MB per image</strong></li>
+                    <li>• Maximum resolution: <strong>5 megapixels</strong></li>
                     <li>• Maximum files: <strong>10 per upload</strong></li>
-                    <li>• Recommended: <strong>1000×1000px</strong> for best quality</li>
                   </ul>
+                  <p className="mt-1 text-amber-200/60">Images exceeding limits will be auto-compressed after confirmation.</p>
                 </div>
               </div>
             </div>
@@ -579,6 +695,61 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
       </div>
+
+      {/* Oversized Image Confirmation Modal */}
+      {showOversizedConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-white">Large Images Detected</h3>
+              <button onClick={() => handleOversizedConfirm(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-4">
+              <div className="flex items-center space-x-2 mb-3">
+                <AlertCircle className="w-5 h-5 text-amber-400" />
+                <span className="text-amber-400 font-medium">Images Exceed Size Limits</span>
+              </div>
+              <p className="text-slate-300 text-sm mb-3">
+                The following images exceed the maximum allowed size (5MB or 5 megapixels):
+              </p>
+
+              <div className="bg-slate-950/50 rounded-lg p-3 mb-4 max-h-48 overflow-y-auto">
+                {pendingOversizedFiles.map((file, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-sm py-1 border-b border-slate-800/50 last:border-0">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-medium truncate">{file.name}</p>
+                      <p className="text-slate-500 text-xs">{file.width}×{file.height}px ({file.megapixels.toFixed(1)}MP) • {(file.size / (1024 * 1024)).toFixed(1)}MB</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-slate-400 text-xs mb-4">
+                Would you like to automatically compress these images to fit within the limits?
+              </p>
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => handleOversizedConfirm(true)}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Yes, Compress & Upload</span>
+                </button>
+                <button
+                  onClick={() => handleOversizedConfirm(false)}
+                  className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Skip Oversized
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
