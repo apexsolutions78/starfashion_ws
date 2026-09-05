@@ -173,6 +173,7 @@ model Color {
   createdAt DateTime @default(now())
 
   variants ProductVariant[]
+  images   ProductImage[]
 
   @@map("colors")
 }
@@ -205,7 +206,6 @@ model ProductVariant {
   inventory Inventory[]
   cartItems CartItem[]
   orderItems OrderItem[]
-  images    ProductImage[]
 
   @@unique([productId, colorId, sizeId])
   @@map("product_variants")
@@ -214,14 +214,14 @@ model ProductVariant {
 model ProductImage {
   id        String   @id @default(uuid())
   productId String
-  variantId String?
+  colorId   String?
   imagePath String
   sortOrder Int      @default(0)
   isPrimary Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  product Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
-  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  color   Color?  @relation(fields: [colorId], references: [id], onDelete: SetNull)
 
   @@map("product_images")
 }

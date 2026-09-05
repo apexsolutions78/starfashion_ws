@@ -32,19 +32,19 @@ export async function POST(
 
     const formData = await request.formData();
     const files = formData.getAll('images') as File[];
-    const variantId = formData.get('variantId') as string | null;
+    const colorId = formData.get('colorId') as string | null;
 
     if (!files || files.length === 0) {
       return ApiUtils.error('No images provided');
     }
 
-    // Validate variantId if provided
-    if (variantId) {
-      const variant = await prisma.productVariant.findUnique({
-        where: { id: variantId },
+    // Validate colorId if provided
+    if (colorId) {
+      const color = await prisma.color.findUnique({
+        where: { id: colorId },
       });
-      if (!variant || variant.productId !== id) {
-        return ApiUtils.error('Invalid variant selected');
+      if (!color) {
+        return ApiUtils.error('Invalid color selected');
       }
     }
 
@@ -61,20 +61,17 @@ export async function POST(
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
 
-      // Validate file type
       if (!ALLOWED_TYPES.includes(file.type)) {
         errors.push(`"${file.name}" is not a JPEG/PNG image`);
         continue;
       }
 
-      // Validate file extension
       const ext = file.name.split('.').pop()?.toLowerCase() || '';
       if (!ALLOWED_EXTENSIONS.includes(ext)) {
         errors.push(`"${file.name}" has invalid extension`);
         continue;
       }
 
-      // Validate file size
       if (file.size > MAX_FILE_SIZE) {
         const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
         errors.push(`"${file.name}" exceeds 5MB limit (${sizeMB}MB)`);
@@ -98,7 +95,7 @@ export async function POST(
       const image = await prisma.productImage.create({
         data: {
           productId: id,
-          variantId: variantId || null,
+          colorId: colorId || null,
           imagePath,
           isPrimary: existingImageCount === 0,
           sortOrder: existingImageCount,
@@ -147,6 +144,14 @@ export async function DELETE(
 
     if (!image || image.productId !== id) {
       return ApiUtils.notFound('Image not found');
+    }
+
+    // Delete the file from disk
+    const filePath = join(process.cwd(), 'public', image.imagePath);
+    try {
+      await unlink(filePath);
+    } catch (e) {
+      // File might not exist, continue anyway
     }
 
     await prisma.productImage.delete({

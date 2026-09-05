@@ -27,7 +27,11 @@ export async function GET(req: NextRequest) {
       include: {
         category: true,
         collection: true,
-        images: true,
+        images: {
+          include: {
+            color: true,
+          },
+        },
         variants: {
           where: { active: true },
           include: {

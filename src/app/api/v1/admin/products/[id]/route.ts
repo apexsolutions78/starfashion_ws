@@ -46,11 +46,7 @@ export async function GET(
         images: {
           orderBy: { sortOrder: 'asc' },
           include: {
-            variant: {
-              include: {
-                color: true,
-              },
-            },
+            color: true,
           },
         },
       },

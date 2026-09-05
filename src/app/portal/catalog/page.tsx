@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Filter, ShoppingCart, Check, Tag, Info } from 'lucide-react';
+import { Search, Filter, ShoppingCart, Check, Tag, Info, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function WholesaleCatalogPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -16,6 +16,12 @@ export default function WholesaleCatalogPage() {
   const [matrixQty, setMatrixQty] = useState<{ [variantId: string]: number }>({});
   const [submittingProduct, setSubmittingProduct] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Color image preview state
+  const [previewImages, setPreviewImages] = useState<any[]>([]);
+  const [previewColor, setPreviewColor] = useState<string>('');
+  const [previewIndex, setPreviewIndex] = useState(0);
+  const [showPreview, setShowPreview] = useState(false);
 
   const fetchCatalog = () => {
     setLoading(true);
@@ -46,6 +52,14 @@ export default function WholesaleCatalogPage() {
       ...prev,
       [variantId]: isNaN(qty) || qty < 0 ? 0 : qty,
     }));
+  };
+
+  const handleShowColorImages = (colorName: string, colorHex: string, images: any[]) => {
+    if (images.length === 0) return;
+    setPreviewImages(images);
+    setPreviewColor(colorName);
+    setPreviewIndex(0);
+    setShowPreview(true);
   };
 
   const handleAddToCart = async (product: any) => {
@@ -209,12 +223,32 @@ export default function WholesaleCatalogPage() {
                     <tbody className="divide-y divide-slate-100">
                       {Object.keys(colorsMap).map((colorName) => (
                         <tr key={colorName} className="hover:bg-slate-50/80">
-                          <td className="py-3 px-3 font-semibold text-slate-800 flex items-center space-x-2">
-                            <span
-                              className="w-3.5 h-3.5 rounded-full border border-slate-300 shadow-xs inline-block"
-                              style={{ backgroundColor: colorsMap[colorName][0]?.color?.hexCode || '#ccc' }}
-                            ></span>
-                            <span>{colorName}</span>
+                          <td className="py-3 px-3 font-semibold text-slate-800">
+                            <div className="flex items-center space-x-2">
+                              <span
+                                className="w-3.5 h-3.5 rounded-full border border-slate-300 shadow-xs inline-block"
+                                style={{ backgroundColor: colorsMap[colorName][0]?.color?.hexCode || '#ccc' }}
+                              ></span>
+                              <span>{colorName}</span>
+                              {(() => {
+                                const colorImages = product.images.filter((img: any) => img.color?.name === colorName);
+                                if (colorImages.length > 0) {
+                                  return (
+                                    <button
+                                      onClick={() => handleShowColorImages(colorName, colorsMap[colorName][0]?.color?.hexCode || '#ccc', colorImages)}
+                                      className="ml-2 flex-shrink-0"
+                                    >
+                                      <img
+                                        src={colorImages[0].imagePath}
+                                        alt={colorName}
+                                        className="w-8 h-8 rounded-md object-cover border border-slate-200 hover:border-indigo-400 transition-colors cursor-pointer"
+                                      />
+                                    </button>
+                                  );
+                                }
+                                return null;
+                              })()}
+                            </div>
                           </td>
 
                           {uniqueSizes.map((sizeName) => {
@@ -264,6 +298,70 @@ export default function WholesaleCatalogPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Color Images Preview Modal */}
+      {showPreview && previewImages.length > 0 && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowPreview(false)}>
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-slate-200">
+              <div className="flex items-center space-x-2">
+                <span
+                  className="w-4 h-4 rounded-full border border-slate-300"
+                  style={{ backgroundColor: previewImages[0]?.color?.hexCode || '#ccc' }}
+                />
+                <h3 className="font-bold text-slate-900">{previewColor}</h3>
+                <span className="text-sm text-slate-500">({previewImages.length} images)</span>
+              </div>
+              <button onClick={() => setShowPreview(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="relative">
+              <div className="aspect-square bg-slate-100 flex items-center justify-center">
+                <img
+                  src={previewImages[previewIndex]?.imagePath}
+                  alt={previewColor}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+
+              {previewImages.length > 1 && (
+                <>
+                  <button
+                    onClick={() => setPreviewIndex((prev) => (prev === 0 ? previewImages.length - 1 : prev - 1))}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-2 shadow-lg"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-slate-700" />
+                  </button>
+                  <button
+                    onClick={() => setPreviewIndex((prev) => (prev === previewImages.length - 1 ? 0 : prev + 1))}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-2 shadow-lg"
+                  >
+                    <ChevronRight className="w-5 h-5 text-slate-700" />
+                  </button>
+                </>
+              )}
+            </div>
+
+            {previewImages.length > 1 && (
+              <div className="p-3 border-t border-slate-200 flex space-x-2 overflow-x-auto">
+                {previewImages.map((img, idx) => (
+                  <button
+                    key={img.id}
+                    onClick={() => setPreviewIndex(idx)}
+                    className={`flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-colors ${
+                      idx === previewIndex ? 'border-indigo-500' : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <img src={img.imagePath} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

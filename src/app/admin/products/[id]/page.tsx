@@ -120,10 +120,24 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
   // Color selection for image upload
   const [selectedColorId, setSelectedColorId] = useState<string>('');
+  const [groupedImages, setGroupedImages] = useState<Map<string, any[]>>(new Map());
 
   useEffect(() => {
     fetchProduct();
   }, [id]);
+
+  // Group images by color when images change
+  useEffect(() => {
+    const grouped = new Map<string, any[]>();
+    images.forEach((img) => {
+      const colorKey = img.colorId || 'no-color';
+      if (!grouped.has(colorKey)) {
+        grouped.set(colorKey, []);
+      }
+      grouped.get(colorKey)!.push(img);
+    });
+    setGroupedImages(grouped);
+  }, [images]);
 
   const fetchProduct = async () => {
     try {
@@ -254,7 +268,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         formData.append('images', file);
       }
       if (selectedColorId) {
-        formData.append('variantId', selectedColorId);
+        formData.append('colorId', selectedColorId);
       }
 
       const res = await fetch(`/api/v1/admin/products/${id}/images`, {
@@ -570,7 +584,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             </div>
 
             {/* Color Selection */}
-            {variants.length > 0 && (
+            {colors.length > 0 && (
               <div className="mb-4">
                 <label className="block text-xs font-medium text-slate-300 mb-2">Assign to Color</label>
                 <select
@@ -579,10 +593,8 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                   className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-4 py-2 text-slate-100 text-sm focus:outline-none focus:border-emerald-500"
                 >
                   <option value="">No color (general image)</option>
-                  {[...new Map(variants.map(v => [v.colorId, v.color])).values()].map((color: any) => (
-                    <option key={color.id} value={variants.find(v => v.colorId === color.id)?.id}>
-                      {color.name}
-                    </option>
+                  {colors.map((color) => (
+                    <option key={color.id} value={color.id}>{color.name}</option>
                   ))}
                 </select>
               </div>
@@ -649,7 +661,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
               </div>
             )}
 
-            {/* Image List */}
+            {/* Image List Grouped by Color */}
             {images.length === 0 ? (
               <div className="text-center py-6 bg-slate-950/30 rounded-lg">
                 <ImageIcon className="w-10 h-10 text-slate-600 mx-auto mb-2" />
@@ -657,54 +669,65 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 <p className="text-slate-600 text-xs mt-1">Upload images to showcase this product</p>
               </div>
             ) : (
-              <div className="space-y-2">
-                <p className="text-slate-400 text-xs mb-2">{images.length} image(s) uploaded</p>
-                {images.map((image) => (
-                  <div key={image.id} className="flex items-center space-x-3 bg-slate-950/50 rounded-lg p-2 border border-slate-800/50">
-                    <div className="w-14 h-14 rounded-lg overflow-hidden bg-slate-800 flex-shrink-0">
-                      <img
-                        src={image.imagePath}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-slate-400 truncate">{image.imagePath.split('/').pop()}</p>
-                      <div className="flex items-center space-x-1 mt-0.5">
-                        {image.variant?.color && (
-                          <span className="flex items-center text-[10px] bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded-full">
-                            <span
-                              className="w-2 h-2 rounded-full mr-1 border border-slate-600"
-                              style={{ backgroundColor: image.variant.color.hexCode }}
-                            />
-                            {image.variant.color.name}
-                          </span>
+              <div className="space-y-4">
+                <p className="text-slate-400 text-xs">{images.length} image(s) uploaded</p>
+                {Array.from(groupedImages.entries()).map(([colorId, colorImages]) => {
+                  const color = colors.find(c => c.id === colorId);
+                  const colorName = color ? color.name : 'General';
+                  const colorHex = color?.hexCode;
+
+                  return (
+                    <div key={colorId} className="bg-slate-950/30 rounded-lg p-3 border border-slate-800/50">
+                      <div className="flex items-center space-x-2 mb-2">
+                        {colorHex && (
+                          <span
+                            className="w-3 h-3 rounded-full border border-slate-600"
+                            style={{ backgroundColor: colorHex }}
+                          />
                         )}
-                        {image.isPrimary && (
-                          <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">Primary</span>
-                        )}
+                        <span className="text-sm font-medium text-slate-200">{colorName}</span>
+                        <span className="text-xs text-slate-500">({colorImages.length})</span>
+                      </div>
+                      <div className="space-y-2">
+                        {colorImages.map((image) => (
+                          <div key={image.id} className="flex items-center space-x-3 bg-slate-900/50 rounded-lg p-2 border border-slate-800/30">
+                            <div className="w-12 h-12 rounded-lg overflow-hidden bg-slate-800 flex-shrink-0">
+                              <img
+                                src={image.imagePath}
+                                alt=""
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-slate-400 truncate">{image.imagePath.split('/').pop()}</p>
+                              {image.isPrimary && (
+                                <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">Primary</span>
+                              )}
+                            </div>
+                            <div className="flex space-x-1">
+                              {!image.isPrimary && (
+                                <button
+                                  onClick={() => handleSetPrimaryImage(image.id)}
+                                  className="text-slate-400 hover:text-emerald-400 p-1.5 rounded hover:bg-slate-800 transition-colors"
+                                  title="Set as primary"
+                                >
+                                  <ImageIcon className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleDeleteImage(image.id)}
+                                className="text-slate-400 hover:text-red-400 p-1.5 rounded hover:bg-slate-800 transition-colors"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                    <div className="flex space-x-1">
-                      {!image.isPrimary && (
-                        <button
-                          onClick={() => handleSetPrimaryImage(image.id)}
-                          className="text-slate-400 hover:text-emerald-400 p-1.5 rounded hover:bg-slate-800 transition-colors"
-                          title="Set as primary"
-                        >
-                          <ImageIcon className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleDeleteImage(image.id)}
-                        className="text-slate-400 hover:text-red-400 p-1.5 rounded hover:bg-slate-800 transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
