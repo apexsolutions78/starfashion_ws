@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Plus, Search, Edit2, Trash2, Package, Image as ImageIcon, Download, Upload, FileText, X, CheckCircle, AlertCircle, FolderPlus } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Package, Image as ImageIcon, Download, Upload, FileText, X, CheckCircle, AlertCircle, FolderPlus, Palette, Ruler, Layers } from 'lucide-react';
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -16,8 +16,13 @@ export default function AdminProductsPage() {
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<any>(null);
   const [pendingCsvContent, setPendingCsvContent] = useState<string | null>(null);
-  const [newCategories, setNewCategories] = useState<string[]>([]);
-  const [categoryConfirmation, setCategoryConfirmation] = useState<'pending' | 'confirmed' | 'rejected' | null>(null);
+  const [newEntries, setNewEntries] = useState<{
+    categories: string[];
+    colors: string[];
+    sizes: string[];
+    collections: string[];
+  }>({ categories: [], colors: [], sizes: [], collections: [] });
+  const [confirmationStatus, setConfirmationStatus] = useState<'pending' | 'confirmed' | 'rejected' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -106,8 +111,8 @@ export default function AdminProductsPage() {
   const handleImportClick = () => {
     setImportResult(null);
     setPendingCsvContent(null);
-    setNewCategories([]);
-    setCategoryConfirmation(null);
+    setNewEntries({ categories: [], colors: [], sizes: [], collections: [] });
+    setConfirmationStatus(null);
     setImportModal(true);
   };
 
@@ -117,28 +122,39 @@ export default function AdminProductsPage() {
 
     setImporting(true);
     setImportResult(null);
-    setNewCategories([]);
-    setCategoryConfirmation(null);
+    setNewEntries({ categories: [], colors: [], sizes: [], collections: [] });
+    setConfirmationStatus(null);
 
     try {
       const csvContent = await file.text();
       setPendingCsvContent(csvContent);
 
-      // First pass: check for new categories
+      // First pass: check for new entries
       const res = await fetch('/api/v1/admin/products/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ csvContent, createCategories: false }),
+        body: JSON.stringify({
+          csvContent,
+          createCategories: false,
+          createColors: false,
+          createSizes: false,
+          createCollections: false,
+        }),
       });
 
       const data = await res.json();
 
       if (data.success && data.data?.requiresConfirmation) {
-        // New categories found, show confirmation
-        setNewCategories(data.data.newCategories);
-        setCategoryConfirmation('pending');
+        // New entries found, show confirmation
+        setNewEntries({
+          categories: data.data.newCategories || [],
+          colors: data.data.newColors || [],
+          sizes: data.data.newSizes || [],
+          collections: data.data.newCollections || [],
+        });
+        setConfirmationStatus('pending');
       } else if (data.success) {
-        // No new categories, proceed directly
+        // No new entries, proceed directly
         setImportResult(data.data);
         fetchProducts();
       } else {
@@ -155,23 +171,29 @@ export default function AdminProductsPage() {
     }
   };
 
-  const handleCategoryConfirmation = async (confirmed: boolean) => {
+  const handleConfirmation = async (confirmed: boolean) => {
     if (!pendingCsvContent) return;
 
     if (!confirmed) {
-      setCategoryConfirmation('rejected');
-      setImportResult({ error: 'Import cancelled. Please update your CSV file with existing categories.' });
+      setConfirmationStatus('rejected');
+      setImportResult({ error: 'Import cancelled. Please update your CSV file with existing entries.' });
       return;
     }
 
-    setCategoryConfirmation('confirmed');
+    setConfirmationStatus('confirmed');
     setImporting(true);
 
     try {
       const res = await fetch('/api/v1/admin/products/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ csvContent: pendingCsvContent, createCategories: true }),
+        body: JSON.stringify({
+          csvContent: pendingCsvContent,
+          createCategories: true,
+          createColors: true,
+          createSizes: true,
+          createCollections: true,
+        }),
       });
 
       const data = await res.json();
@@ -188,6 +210,19 @@ export default function AdminProductsPage() {
     } finally {
       setImporting(false);
     }
+  };
+
+  const hasNewEntries = newEntries.categories.length > 0 ||
+    newEntries.colors.length > 0 ||
+    newEntries.sizes.length > 0 ||
+    newEntries.collections.length > 0;
+
+  const closeImportModal = () => {
+    setImportModal(false);
+    setImportResult(null);
+    setPendingCsvContent(null);
+    setNewEntries({ categories: [], colors: [], sizes: [], collections: [] });
+    setConfirmationStatus(null);
   };
 
   return (
@@ -273,7 +308,6 @@ export default function AdminProductsPage() {
 
             return (
               <div key={product.id} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden hover:border-slate-700 transition-colors">
-                {/* Product Image */}
                 <div className="h-48 bg-slate-800 relative">
                   {primaryImage ? (
                     <img
@@ -298,7 +332,6 @@ export default function AdminProductsPage() {
                   </div>
                 </div>
 
-                {/* Product Info */}
                 <div className="p-4">
                   <div className="flex items-start justify-between mb-2">
                     <div>
@@ -324,7 +357,6 @@ export default function AdminProductsPage() {
                     </div>
                   </div>
 
-                  {/* Actions */}
                   <div className="flex items-center justify-between pt-3 border-t border-slate-800">
                     <div className="flex space-x-2">
                       <Link
@@ -351,7 +383,6 @@ export default function AdminProductsPage() {
                   </div>
                 </div>
 
-                {/* Delete Modal */}
                 {deleteModal === product.id && (
                   <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-md w-full">
@@ -388,47 +419,95 @@ export default function AdminProductsPage() {
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-white">Import Products from CSV</h3>
-              <button
-                onClick={() => {
-                  setImportModal(false);
-                  setImportResult(null);
-                  setPendingCsvContent(null);
-                  setNewCategories([]);
-                  setCategoryConfirmation(null);
-                }}
-                className="text-slate-400 hover:text-white"
-              >
+              <button onClick={closeImportModal} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Show category confirmation if needed */}
-            {categoryConfirmation === 'pending' && (
+            {/* Show confirmation if new entries found */}
+            {confirmationStatus === 'pending' && hasNewEntries && (
               <div className="mb-4">
                 <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-lg p-4 mb-4">
                   <div className="flex items-center space-x-2 mb-3">
-                    <FolderPlus className="w-5 h-5 text-indigo-400" />
-                    <span className="text-indigo-400 font-medium">New Categories Detected</span>
+                    <AlertCircle className="w-5 h-5 text-indigo-400" />
+                    <span className="text-indigo-400 font-medium">New Entries Detected</span>
                   </div>
                   <p className="text-slate-300 text-sm mb-3">
-                    The following categories were found in your CSV file but don't exist in the system:
+                    The following entries were found in your CSV file but don't exist in the system:
                   </p>
-                  <div className="bg-slate-950/50 rounded-lg p-3 mb-4">
-                    <ul className="space-y-1">
-                      {newCategories.map((cat, idx) => (
-                        <li key={idx} className="flex items-center space-x-2 text-sm">
-                          <FolderPlus className="w-4 h-4 text-indigo-400" />
-                          <span className="text-white font-medium">{cat}</span>
-                        </li>
-                      ))}
-                    </ul>
+
+                  <div className="bg-slate-950/50 rounded-lg p-3 mb-4 space-y-3">
+                    {newEntries.categories.length > 0 && (
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1 flex items-center space-x-1">
+                          <Layers className="w-3 h-3" />
+                          <span>Categories</span>
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {newEntries.categories.map((cat, idx) => (
+                            <span key={idx} className="bg-indigo-500/20 text-indigo-300 text-xs px-2 py-0.5 rounded-full">
+                              {cat}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {newEntries.colors.length > 0 && (
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1 flex items-center space-x-1">
+                          <Palette className="w-3 h-3" />
+                          <span>Colors</span>
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {newEntries.colors.map((color, idx) => (
+                            <span key={idx} className="bg-indigo-500/20 text-indigo-300 text-xs px-2 py-0.5 rounded-full">
+                              {color}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {newEntries.sizes.length > 0 && (
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1 flex items-center space-x-1">
+                          <Ruler className="w-3 h-3" />
+                          <span>Sizes</span>
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {newEntries.sizes.map((size, idx) => (
+                            <span key={idx} className="bg-indigo-500/20 text-indigo-300 text-xs px-2 py-0.5 rounded-full">
+                              {size}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {newEntries.collections.length > 0 && (
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1 flex items-center space-x-1">
+                          <Layers className="w-3 h-3" />
+                          <span>Collections</span>
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {newEntries.collections.map((col, idx) => (
+                            <span key={idx} className="bg-indigo-500/20 text-indigo-300 text-xs px-2 py-0.5 rounded-full">
+                              {col}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
+
                   <p className="text-slate-400 text-xs mb-4">
-                    Would you like to create these categories automatically?
+                    Would you like to create these entries automatically?
                   </p>
                   <div className="flex space-x-3">
                     <button
-                      onClick={() => handleCategoryConfirmation(true)}
+                      onClick={() => handleConfirmation(true)}
                       disabled={importing}
                       className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2 disabled:opacity-50"
                     >
@@ -445,7 +524,7 @@ export default function AdminProductsPage() {
                       )}
                     </button>
                     <button
-                      onClick={() => handleCategoryConfirmation(false)}
+                      onClick={() => handleConfirmation(false)}
                       disabled={importing}
                       className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                     >
@@ -457,7 +536,7 @@ export default function AdminProductsPage() {
             )}
 
             {/* Show upload area only if not waiting for confirmation */}
-            {!importResult && categoryConfirmation !== 'pending' && (
+            {!importResult && confirmationStatus !== 'pending' && (
               <>
                 <div className="mb-4">
                   <p className="text-slate-400 text-sm mb-4">
@@ -563,6 +642,45 @@ export default function AdminProductsPage() {
                       </div>
                     )}
 
+                    {importResult.colorsCreated && importResult.colorsCreated.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-emerald-500/30">
+                        <p className="text-emerald-300 text-xs mb-1">New colors created:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {importResult.colorsCreated.map((color: string, idx: number) => (
+                            <span key={idx} className="bg-emerald-500/20 text-emerald-300 text-xs px-2 py-0.5 rounded-full">
+                              {color}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {importResult.sizesCreated && importResult.sizesCreated.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-emerald-500/30">
+                        <p className="text-emerald-300 text-xs mb-1">New sizes created:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {importResult.sizesCreated.map((size: string, idx: number) => (
+                            <span key={idx} className="bg-emerald-500/20 text-emerald-300 text-xs px-2 py-0.5 rounded-full">
+                              {size}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {importResult.collectionsCreated && importResult.collectionsCreated.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-emerald-500/30">
+                        <p className="text-emerald-300 text-xs mb-1">New collections created:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {importResult.collectionsCreated.map((col: string, idx: number) => (
+                            <span key={idx} className="bg-emerald-500/20 text-emerald-300 text-xs px-2 py-0.5 rounded-full">
+                              {col}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {importResult.errors && importResult.errors.length > 0 && (
                       <div className="mt-4">
                         <p className="text-slate-400 text-xs mb-2">Errors:</p>
@@ -577,13 +695,7 @@ export default function AdminProductsPage() {
                 )}
 
                 <button
-                  onClick={() => {
-                    setImportModal(false);
-                    setImportResult(null);
-                    setPendingCsvContent(null);
-                    setNewCategories([]);
-                    setCategoryConfirmation(null);
-                  }}
+                  onClick={closeImportModal}
                   className="w-full bg-slate-800 hover:bg-slate-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
                 >
                   Close

@@ -56,6 +56,106 @@ function parseCSV(csvContent: string): ProductRow[] {
   return rows;
 }
 
+function generateHexCode(colorName: string): string {
+  const colorMap: Record<string, string> = {
+    'red': '#FF0000',
+    'blue': '#0000FF',
+    'green': '#008000',
+    'yellow': '#FFFF00',
+    'orange': '#FFA500',
+    'purple': '#800080',
+    'pink': '#FFC0CB',
+    'brown': '#A52A2A',
+    'gray': '#808080',
+    'grey': '#808080',
+    'beige': '#F5F5DC',
+    'maroon': '#800000',
+    'navy': '#000080',
+    'teal': '#008080',
+    'olive': '#808000',
+    'lime': '#00FF00',
+    'aqua': '#00FFFF',
+    'silver': '#C0C0C0',
+    'gold': '#FFD700',
+    'coral': '#FF7F50',
+    'salmon': '#FA8072',
+    'khaki': '#F0E68C',
+    'plum': '#DDA0DD',
+    'violet': '#EE82EE',
+    'indigo': '#4B0082',
+    'turquoise': '#40E0D0',
+    'crimson': '#DC143C',
+    'lavender': '#E6E6FA',
+    'charcoal': '#36454F',
+    'mustard': '#FFDB58',
+    'rust': '#B7410E',
+    'burgundy': '#800020',
+    'camel': '#C19A6B',
+    'cream': '#FFFDD0',
+    'copper': '#B87333',
+    'denim': '#1560BD',
+    'emerald': '#50C878',
+    'fuchsia': '#FF00FF',
+    'mauve': '#E0B0FF',
+    'mint': '#98FF98',
+    'peach': '#FFE5B4',
+    'sage': '#BCB88A',
+    'taupe': '#483C32',
+    'wine': '#722F37',
+  };
+
+  const normalized = colorName.toLowerCase().trim();
+  if (colorMap[normalized]) {
+    return colorMap[normalized];
+  }
+
+  let hash = 0;
+  for (let i = 0; i < normalized.length; i++) {
+    hash = normalized.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hex = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+  return '#' + '000000'.substring(0, 6 - hex.length) + hex;
+}
+
+function generateCategorySlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
+function generateCollectionSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
+function generateSizeSortOrder(sizeName: string): number {
+  const sizeOrder: Record<string, number> = {
+    'xxs': 1,
+    'xs': 2,
+    's': 3,
+    'small': 3,
+    'm': 4,
+    'medium': 4,
+    'l': 5,
+    'large': 5,
+    'xl': 6,
+    'xxl': 7,
+    'xxxl': 8,
+    'xxxxl': 9,
+    'one size': 10,
+    'os': 10,
+    '2xl': 7,
+    '3xl': 8,
+    '4xl': 9,
+    '5xl': 10,
+  };
+
+  return sizeOrder[sizeName.toLowerCase()] || 100;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getAuthSession(request);
@@ -64,7 +164,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { csvContent, createCategories } = body;
+    const { csvContent, createCategories, createColors, createSizes, createCollections } = body;
 
     if (!csvContent) {
       return ApiUtils.error('No CSV content provided');
@@ -76,56 +176,119 @@ export async function POST(request: NextRequest) {
       return ApiUtils.error('No valid data rows found in the CSV file');
     }
 
+    // Fetch existing data
     const categories = await prisma.category.findMany();
     const collections = await prisma.collection.findMany();
     const colors = await prisma.color.findMany();
     const sizes = await prisma.size.findMany();
 
     const categoryMap = new Map(categories.map(c => [c.name.toLowerCase(), c]));
-    const collectionMap = new Map(collections.map(c => [c.name.toLowerCase(), c.id]));
-    const colorMap = new Map(colors.map(c => [c.name.toLowerCase(), c.id]));
-    const sizeMap = new Map(sizes.map(s => [s.name.toLowerCase(), s.id]));
+    const collectionMap = new Map(collections.map(c => [c.name.toLowerCase(), c]));
+    const colorMap = new Map(colors.map(c => [c.name.toLowerCase(), c]));
+    const sizeMap = new Map(sizes.map(s => [s.name.toLowerCase(), s]));
 
-    // Detect new categories
+    // Detect new entries
     const newCategoryNames = new Set<string>();
+    const newColorNames = new Set<string>();
+    const newSizeNames = new Set<string>();
+    const newCollectionNames = new Set<string>();
+
     for (const row of rows) {
-      const existingCategory = categoryMap.get(row.categoryName.toLowerCase());
-      if (!existingCategory && row.categoryName) {
+      if (row.categoryName && !categoryMap.has(row.categoryName.toLowerCase())) {
         newCategoryNames.add(row.categoryName);
+      }
+      if (row.colorName && !colorMap.has(row.colorName.toLowerCase())) {
+        newColorNames.add(row.colorName);
+      }
+      if (row.sizeName && !sizeMap.has(row.sizeName.toLowerCase())) {
+        newSizeNames.add(row.sizeName);
+      }
+      if (row.collectionName && !collectionMap.has(row.collectionName.toLowerCase())) {
+        newCollectionNames.add(row.collectionName);
       }
     }
 
-    // If there are new categories and user hasn't confirmed creation, return them
-    if (newCategoryNames.size > 0 && !createCategories) {
+    // Check if confirmation needed
+    const needsCategoryConfirm = newCategoryNames.size > 0 && !createCategories;
+    const needsColorConfirm = newColorNames.size > 0 && !createColors;
+    const needsSizeConfirm = newSizeNames.size > 0 && !createSizes;
+    const needsCollectionConfirm = newCollectionNames.size > 0 && !createCollections;
+
+    if (needsCategoryConfirm || needsColorConfirm || needsSizeConfirm || needsCollectionConfirm) {
       return ApiUtils.success({
         requiresConfirmation: true,
         newCategories: Array.from(newCategoryNames),
+        newColors: Array.from(newColorNames),
+        newSizes: Array.from(newSizeNames),
+        newCollections: Array.from(newCollectionNames),
         totalRows: rows.length,
-      }, 'New categories found. Confirmation required.');
+      }, 'New entries found. Confirmation required.');
     }
 
     // Create new categories if confirmed
-    const createdCategories: { name: string; id: string }[] = [];
+    const createdCategories: string[] = [];
     if (createCategories && newCategoryNames.size > 0) {
-      for (const categoryName of newCategoryNames) {
-        const slug = categoryName
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/(^-|-$)/g, '');
-
+      for (const name of newCategoryNames) {
         const newCategory = await prisma.category.create({
           data: {
-            name: categoryName,
-            slug,
+            name,
+            slug: generateCategorySlug(name),
             active: true,
           },
         });
-
-        categoryMap.set(categoryName.toLowerCase(), newCategory);
-        createdCategories.push({ name: categoryName, id: newCategory.id });
+        categoryMap.set(name.toLowerCase(), newCategory);
+        createdCategories.push(name);
       }
     }
 
+    // Create new colors if confirmed
+    const createdColors: string[] = [];
+    if (createColors && newColorNames.size > 0) {
+      for (const name of newColorNames) {
+        const newColor = await prisma.color.create({
+          data: {
+            name,
+            hexCode: generateHexCode(name),
+            active: true,
+          },
+        });
+        colorMap.set(name.toLowerCase(), newColor);
+        createdColors.push(name);
+      }
+    }
+
+    // Create new sizes if confirmed
+    const createdSizes: string[] = [];
+    if (createSizes && newSizeNames.size > 0) {
+      for (const name of newSizeNames) {
+        const newSize = await prisma.size.create({
+          data: {
+            name,
+            sortOrder: generateSizeSortOrder(name),
+            active: true,
+          },
+        });
+        sizeMap.set(name.toLowerCase(), newSize);
+        createdSizes.push(name);
+      }
+    }
+
+    // Create new collections if confirmed
+    const createdCollections: string[] = [];
+    if (createCollections && newCollectionNames.size > 0) {
+      for (const name of newCollectionNames) {
+        const newCollection = await prisma.collection.create({
+          data: {
+            name,
+            active: true,
+          },
+        });
+        collectionMap.set(name.toLowerCase(), newCollection);
+        createdCollections.push(name);
+      }
+    }
+
+    // Process products
     const warehouse = await prisma.inventoryLocation.findFirst({
       where: { code: 'WH-CENTRAL' },
     });
@@ -135,7 +298,10 @@ export async function POST(request: NextRequest) {
       created: 0,
       variantsCreated: 0,
       skipped: 0,
-      categoriesCreated: createdCategories.map(c => c.name),
+      categoriesCreated: createdCategories,
+      colorsCreated: createdColors,
+      sizesCreated: createdSizes,
+      collectionsCreated: createdCollections,
       errors: [] as string[],
     };
 
@@ -150,15 +316,15 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        const colorId = colorMap.get(row.colorName.toLowerCase());
-        if (!colorId) {
+        const color = colorMap.get(row.colorName.toLowerCase());
+        if (!color) {
           results.errors.push(`Row ${results.created + results.skipped + 1}: Color "${row.colorName}" not found`);
           results.skipped++;
           continue;
         }
 
-        const sizeId = sizeMap.get(row.sizeName.toLowerCase());
-        if (!sizeId) {
+        const size = sizeMap.get(row.sizeName.toLowerCase());
+        if (!size) {
           results.errors.push(`Row ${results.created + results.skipped + 1}: Size "${row.sizeName}" not found`);
           results.skipped++;
           continue;
@@ -180,7 +346,9 @@ export async function POST(request: NextRequest) {
           if (existingProduct) {
             productId = existingProduct.id;
           } else {
-            const collectionId = collectionMap.get(row.collectionName.toLowerCase()) || null;
+            const collection = row.collectionName
+              ? collectionMap.get(row.collectionName.toLowerCase())
+              : null;
 
             const product = await prisma.product.create({
               data: {
@@ -189,7 +357,7 @@ export async function POST(request: NextRequest) {
                 slug: row.slug,
                 description: row.description || null,
                 categoryId: category.id,
-                collectionId,
+                collectionId: collection?.id || null,
                 basePrice: row.basePrice,
               },
             });
@@ -211,8 +379,8 @@ export async function POST(request: NextRequest) {
           const variant = await prisma.productVariant.create({
             data: {
               productId,
-              colorId,
-              sizeId,
+              colorId: color.id,
+              sizeId: size.id,
               sku,
             },
           });
