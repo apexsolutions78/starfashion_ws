@@ -40,15 +40,21 @@ export async function POST(
     }
 
     // Update company
+    const updateData: any = {
+      onboardingStatus: 'APPROVED',
+      approvedAt: new Date(),
+      approvedByUserId: session.userId,
+      creditLimit: creditLimit || 0,
+    };
+    if (paymentTermsId) {
+      const termExists = await prisma.paymentTerm.findUnique({ where: { id: paymentTermsId } });
+      if (termExists) {
+        updateData.paymentTermsId = paymentTermsId;
+      }
+    }
     await prisma.customerCompany.update({
       where: { id },
-      data: {
-        onboardingStatus: 'APPROVED',
-        approvedAt: new Date(),
-        approvedByUserId: session.userId,
-        creditLimit: creditLimit || 0,
-        paymentTermsId: paymentTermsId || null,
-      },
+      data: updateData,
     });
 
     // Update user approval status

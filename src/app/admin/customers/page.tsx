@@ -62,12 +62,12 @@ export default function AdminCustomersPage() {
 
   const fetchPaymentTerms = async () => {
     setPaymentTerms([
-      { id: 'net-15', name: 'Net 15', days: 15 },
-      { id: 'net-30', name: 'Net 30', days: 30 },
-      { id: 'net-45', name: 'Net 45', days: 45 },
-      { id: 'net-60', name: 'Net 60', days: 60 },
-      { id: 'net-90', name: 'Net 90', days: 90 },
-      { id: 'cod', name: 'Cash on Delivery', days: 0 },
+      { id: 'term-net-15', name: 'Net 15', days: 15 },
+      { id: 'term-net-30', name: 'Net 30', days: 30 },
+      { id: 'term-net-45', name: 'Net 45', days: 45 },
+      { id: 'term-net-60', name: 'Net 60', days: 60 },
+      { id: 'term-net-90', name: 'Net 90', days: 90 },
+      { id: 'term-immediate', name: 'Cash on Delivery', days: 0 },
     ]);
   };
 
@@ -77,7 +77,7 @@ export default function AdminCustomersPage() {
       const res = await fetch(`/api/v1/admin/customers/${customerId}/approval`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ creditLimit: 0, paymentTermsId: 'net-30' }),
+        body: JSON.stringify({ creditLimit: 0, paymentTermsId: 'term-net-30' }),
       });
 
       const data = await res.json();
@@ -127,7 +127,7 @@ export default function AdminCustomersPage() {
   const handleEditCustomer = (customer: any) => {
     setEditingCustomer(customer);
     setEditCreditLimit(customer.creditLimit?.toString() || '0');
-    setEditPaymentTermsId(customer.paymentTermsId || 'net-30');
+    setEditPaymentTermsId(customer.paymentTermsId || 'term-net-30');
     setEditStatus(customer.status || 'ACTIVE');
   };
 
