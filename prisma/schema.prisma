@@ -22,6 +22,7 @@ model User {
   lastName     String
   phone        String?
   userType     String   @default("CUSTOMER") // "ADMIN" | "CUSTOMER"
+  role         String?  @default("USER")     // "MASTER_ADMIN" | "ADMIN" | "USER" (for ADMIN users only)
   status       String   @default("ACTIVE")   // "ACTIVE" | "INACTIVE" | "SUSPENDED"
   lastLoginAt  DateTime?
   createdAt    DateTime @default(now())

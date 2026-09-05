@@ -14,12 +14,14 @@ import {
   ShoppingBag,
   Tags,
   UserCog,
+  UserPlus,
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [session, setSession] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/v1/auth/me')
@@ -27,6 +29,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       .then((data) => {
         if (data.success && data.data?.session?.userType === 'ADMIN') {
           setSession(data.data.session);
+          // Fetch user profile to get role
+          fetch('/api/v1/admin/profile')
+            .then((res) => res.json())
+            .then((profileData) => {
+              if (profileData.success) {
+                setUserRole(profileData.data.role);
+              }
+            });
         } else {
           router.push('/login');
         }
@@ -40,15 +50,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   const navItems = [
-    { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/admin/products', label: 'Products', icon: Tags },
-    { href: '/admin/orders', label: 'Order Processing', icon: Package },
-    { href: '/admin/tiers', label: 'Pricing Tiers', icon: Sliders },
-    { href: '/admin/payments', label: 'Record Payments', icon: CreditCard },
-    { href: '/admin/customers', label: 'Customers & Credit', icon: Users },
-    { href: '/admin/audit-logs', label: 'Audit Trail', icon: ShieldAlert },
-    { href: '/admin/profile', label: 'Admin Profile', icon: UserCog },
+    { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['MASTER_ADMIN', 'ADMIN', 'USER'] },
+    { href: '/admin/products', label: 'Products', icon: Tags, roles: ['MASTER_ADMIN', 'ADMIN', 'USER'] },
+    { href: '/admin/orders', label: 'Order Processing', icon: Package, roles: ['MASTER_ADMIN', 'ADMIN'] },
+    { href: '/admin/tiers', label: 'Pricing Tiers', icon: Sliders, roles: ['MASTER_ADMIN', 'ADMIN'] },
+    { href: '/admin/payments', label: 'Record Payments', icon: CreditCard, roles: ['MASTER_ADMIN', 'ADMIN'] },
+    { href: '/admin/customers', label: 'Customers & Credit', icon: Users, roles: ['MASTER_ADMIN', 'ADMIN'] },
+    { href: '/admin/audit-logs', label: 'Audit Trail', icon: ShieldAlert, roles: ['MASTER_ADMIN', 'ADMIN'] },
+    { href: '/admin/users', label: 'User Management', icon: UserPlus, roles: ['MASTER_ADMIN'] },
+    { href: '/admin/profile', label: 'Admin Profile', icon: UserCog, roles: ['MASTER_ADMIN', 'ADMIN', 'USER'] },
   ];
+
+  const filteredNavItems = navItems.filter(item => !userRole || item.roles.includes(userRole));
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col md:flex-row">
@@ -68,7 +81,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
 
           <nav className="space-y-1.5">
-            {navItems.map((item) => {
+            {filteredNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
               return (

@@ -72,7 +72,7 @@ async function main() {
 
   const adminUser = await prisma.user.upsert({
     where: { email: 'admin@starfashion.com' },
-    update: {},
+    update: { role: 'MASTER_ADMIN' },
     create: {
       email: 'admin@starfashion.com',
       passwordHash,
@@ -80,6 +80,7 @@ async function main() {
       lastName: 'Admin',
       phone: '+491512345678',
       userType: 'ADMIN',
+      role: 'MASTER_ADMIN',
       status: 'ACTIVE',
     },
   });
