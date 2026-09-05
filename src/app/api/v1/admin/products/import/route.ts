@@ -6,7 +6,6 @@ import { ApiUtils } from '@/lib/api-response';
 interface ProductRow {
   articleNumber: string;
   name: string;
-  slug: string;
   description: string;
   categoryName: string;
   collectionName: string;
@@ -33,22 +32,21 @@ function parseCSV(csvContent: string): ProductRow[] {
 
     const columns = line.split(',').map(col => col.trim().replace(/^"|"$/g, ''));
 
-    if (columns.length < 11) continue;
+    if (columns.length < 10) continue;
 
-    const stockValue = parseInt(columns[10]) || 0;
+    const stockValue = parseInt(columns[9]) || 0;
     if (stockValue < 0) continue;
 
     rows.push({
       articleNumber: columns[0],
       name: columns[1],
-      slug: columns[2],
-      description: columns[3],
-      categoryName: columns[4],
-      collectionName: columns[5],
-      basePrice: parseFloat(columns[6]) || 0,
-      colorName: columns[7],
-      sizeName: columns[8],
-      sku: columns[9],
+      description: columns[2],
+      categoryName: columns[3],
+      collectionName: columns[4],
+      basePrice: parseFloat(columns[5]) || 0,
+      colorName: columns[6],
+      sizeName: columns[7],
+      sku: columns[8],
       stock: stockValue,
     });
   }
@@ -350,11 +348,14 @@ export async function POST(request: NextRequest) {
               ? collectionMap.get(row.collectionName.toLowerCase())
               : null;
 
+            // Auto-generate slug from article number (unique since articleNumber is unique)
+            const slug = row.articleNumber.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
             const product = await prisma.product.create({
               data: {
                 articleNumber: row.articleNumber,
                 name: row.name,
-                slug: row.slug,
+                slug,
                 description: row.description || null,
                 categoryId: category.id,
                 collectionId: collection?.id || null,

@@ -585,7 +585,7 @@ export default function AdminProductsPage() {
                 <div className="bg-slate-950/50 rounded-lg p-4">
                   <h4 className="text-white text-sm font-medium mb-2">Expected Format:</h4>
                   <div className="text-xs text-slate-400 space-y-1">
-                    <p>• Article Number, Name, Slug, Description</p>
+                    <p>• Article Number, Name, Description</p>
                     <p>• Category, Collection, Base Price</p>
                     <p>• Color, Size, SKU (optional), Stock</p>
                   </div>
