@@ -51,7 +51,9 @@ export async function POST(req: NextRequest) {
     let companyName: string | undefined = undefined;
     let role: string | undefined = undefined;
 
-    if (user.userType === 'CUSTOMER' && user.customerUsers.length > 0) {
+    if (user.userType === 'ADMIN') {
+      role = user.role || undefined;
+    } else if (user.userType === 'CUSTOMER' && user.customerUsers.length > 0) {
       const primaryLink = user.customerUsers[0];
       customerId = primaryLink.customerId;
       companyName = primaryLink.customer.companyName;
