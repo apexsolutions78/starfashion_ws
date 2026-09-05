@@ -21,6 +21,9 @@ export default function AdminCustomersPage() {
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectModal, setShowRejectModal] = useState<string | null>(null);
+  const [showApproveModal, setShowApproveModal] = useState<any>(null);
+  const [approveCreditLimit, setApproveCreditLimit] = useState('0');
+  const [approvePaymentTermsId, setApprovePaymentTermsId] = useState('term-due-on-order');
 
   // Statement state
   const [showStatement, setShowStatement] = useState(false);
@@ -62,6 +65,7 @@ export default function AdminCustomersPage() {
 
   const fetchPaymentTerms = async () => {
     setPaymentTerms([
+      { id: 'term-due-on-order', name: 'Due on Order', days: 0 },
       { id: 'term-net-15', name: 'Net 15', days: 15 },
       { id: 'term-net-30', name: 'Net 30', days: 30 },
       { id: 'term-net-45', name: 'Net 45', days: 45 },
@@ -77,7 +81,7 @@ export default function AdminCustomersPage() {
       const res = await fetch(`/api/v1/admin/customers/${customerId}/approval`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ creditLimit: 0, paymentTermsId: 'term-net-30' }),
+        body: JSON.stringify({ creditLimit: parseFloat(approveCreditLimit) || 0, paymentTermsId: approvePaymentTermsId }),
       });
 
       const data = await res.json();
@@ -85,6 +89,7 @@ export default function AdminCustomersPage() {
         setSuccessMessage('Customer approved successfully');
         fetchCustomers();
         fetchPendingCustomers();
+        setShowApproveModal(null);
         setTimeout(() => setSuccessMessage(null), 3000);
       } else {
         setErrorMessage(data.error || 'Failed to approve customer');
@@ -278,7 +283,11 @@ export default function AdminCustomersPage() {
                 </div>
                 <div className="flex space-x-2">
                   <button
-                    onClick={() => handleApprove(c.id)}
+                    onClick={() => {
+                      setShowApproveModal(c);
+                      setApproveCreditLimit('0');
+                      setApprovePaymentTermsId('term-due-on-order');
+                    }}
                     disabled={approvingId === c.id}
                     className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2 rounded-lg transition-colors flex items-center justify-center space-x-1 disabled:opacity-50"
                   >
@@ -429,6 +438,79 @@ export default function AdminCustomersPage() {
               >
                 <Save className="w-4 h-4" />
                 <span>{saving ? 'Saving...' : 'Save'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Approve Modal */}
+      {showApproveModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-md w-full">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-white">Approve {showApproveModal.companyName}</h3>
+              <button onClick={() => setShowApproveModal(null)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-slate-950/50 rounded-lg p-3 text-xs text-slate-400">
+                <div>Contact: <span className="text-white">{showApproveModal.contactName}</span></div>
+                <div>Phone: <span className="text-white">{showApproveModal.phone}</span></div>
+                <div>Location: <span className="text-white">{showApproveModal.city}, {showApproveModal.country}</span></div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-2">Payment Terms</label>
+                <select
+                  value={approvePaymentTermsId}
+                  onChange={(e) => setApprovePaymentTermsId(e.target.value)}
+                  className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-4 py-2 text-slate-100 text-sm focus:outline-none focus:border-emerald-500"
+                >
+                  {paymentTerms.map((term) => (
+                    <option key={term.id} value={term.id}>{term.name}</option>
+                  ))}
+                </select>
+                {approvePaymentTermsId === 'term-due-on-order' && (
+                  <p className="text-amber-400 text-[11px] mt-1">Customer must pay 100% advance before order processing</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-2">Credit Limit (Rs.)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={approveCreditLimit}
+                  onChange={(e) => setApproveCreditLimit(e.target.value)}
+                  className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-4 py-2 text-slate-100 text-sm focus:outline-none focus:border-emerald-500"
+                />
+                {parseFloat(approveCreditLimit) === 0 && approvePaymentTermsId === 'term-due-on-order' && (
+                  <p className="text-amber-400 text-[11px] mt-1">No credit - full payment required on every order</p>
+                )}
+                {parseFloat(approveCreditLimit) > 0 && (
+                  <p className="text-emerald-400 text-[11px] mt-1">Customer can order up to Rs.{parseFloat(approveCreditLimit).toFixed(2)} on credit</p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={() => setShowApproveModal(null)}
+                className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleApprove(showApproveModal.id)}
+                disabled={approvingId === showApproveModal.id}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2 disabled:opacity-50"
+              >
+                <Check className="w-4 h-4" />
+                <span>{approvingId === showApproveModal.id ? 'Approving...' : 'Approve Customer'}</span>
               </button>
             </div>
           </div>

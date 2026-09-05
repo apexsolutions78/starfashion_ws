@@ -7,6 +7,7 @@ import { ShoppingCart, Trash2, ArrowRight, Tag, ShieldAlert, CheckCircle2, Credi
 export default function CartPage() {
   const router = useRouter();
   const [cartData, setCartData] = useState<any>(null);
+  const [customerInfo, setCustomerInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
@@ -27,14 +28,17 @@ export default function CartPage() {
 
   const fetchCart = () => {
     setLoading(true);
-    fetch('/api/v1/cart')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setCartData(data.data);
-        }
-      })
-      .finally(() => setLoading(false));
+    Promise.all([
+      fetch('/api/v1/cart').then((res) => res.json()),
+      fetch('/api/v1/auth/me').then((res) => res.json()),
+    ]).then(([cartData, userData]) => {
+      if (cartData.success) {
+        setCartData(cartData.data);
+      }
+      if (userData.success) {
+        setCustomerInfo(userData.data.customerCompany);
+      }
+    }).finally(() => setLoading(false));
   };
 
   useEffect(() => {
@@ -50,9 +54,19 @@ export default function CartPage() {
     fetchCart();
   };
 
+  const isDueOnOrder = customerInfo?.paymentTermsId === 'term-due-on-order';
+  const requiresFullPayment = isDueOnOrder && customerInfo?.creditLimit === 0;
+
   const handleSubmitOrder = async () => {
     setSubmitting(true);
     setOrderError(null);
+
+    // If customer requires full payment, show payment form first
+    if (requiresFullPayment && !showPayment) {
+      setSubmitting(false);
+      setShowPayment(true);
+      return;
+    }
 
     try {
       const res = await fetch('/api/v1/orders', {
@@ -153,7 +167,7 @@ export default function CartPage() {
           <p className="text-slate-500 text-sm">Your order has been placed and is pending confirmation.</p>
         </div>
 
-        {!showPayment ? (
+        {requiresFullPayment && !paymentSuccess ? (
           <div className="bg-white border border-slate-200 rounded-2xl p-6">
             <h4 className="text-base font-bold text-slate-900 mb-4">Submit Payment</h4>
             <p className="text-slate-500 text-sm mb-4">
@@ -408,12 +422,38 @@ export default function CartPage() {
                 )}
               </div>
 
+              {/* Payment Terms Warning */}
+              {requiresFullPayment && (
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3.5 text-xs space-y-1">
+                  <div className="flex items-center space-x-2 text-amber-400 font-bold">
+                    <CreditCard className="w-4 h-4" />
+                    <span>100% Advance Payment Required</span>
+                  </div>
+                  <p className="text-amber-300/80 text-[11px]">
+                    Your account requires full payment before order processing. Please submit payment after placing your order.
+                  </p>
+                </div>
+              )}
+
+              {isDueOnOrder && !requiresFullPayment && (
+                <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-3.5 text-xs space-y-1">
+                  <div className="flex items-center space-x-2 text-slate-300 font-bold">
+                    <CreditCard className="w-4 h-4" />
+                    <span>Payment Terms: Due on Order</span>
+                  </div>
+                </div>
+              )}
+
               <button
                 onClick={handleSubmitOrder}
                 disabled={submitting}
-                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm py-3.5 rounded-xl transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2 disabled:opacity-50"
+                className={`w-full font-bold text-sm py-3.5 rounded-xl transition-all shadow-lg flex items-center justify-center space-x-2 disabled:opacity-50 ${
+                  requiresFullPayment
+                    ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-600/30'
+                    : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30'
+                }`}
               >
-                <span>{submitting ? 'Submitting Order...' : 'Submit Wholesale Order'}</span>
+                <span>{submitting ? 'Submitting Order...' : requiresFullPayment ? 'Pay & Submit Order' : 'Submit Wholesale Order'}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>

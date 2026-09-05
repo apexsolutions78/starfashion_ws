@@ -24,6 +24,11 @@ async function main() {
   console.log('✅ System Settings seeded.');
 
   // 2. Seed Payment Terms
+  const dueOnOrder = await prisma.paymentTerm.upsert({
+    where: { id: 'term-due-on-order' },
+    update: {},
+    create: { id: 'term-due-on-order', name: 'Due on Order', daysDue: 0, description: '100% advance payment required before order processing' },
+  });
   const net30 = await prisma.paymentTerm.upsert({
     where: { id: 'term-net-30' },
     update: {},

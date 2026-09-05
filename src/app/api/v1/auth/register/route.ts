@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Create CustomerCompany with PENDING approval
+      // Create CustomerCompany with PENDING approval and "Due on Order" payment terms
       const company = await tx.customerCompany.create({
         data: {
           companyName: parsed.companyName,
@@ -68,6 +68,8 @@ export async function POST(request: NextRequest) {
           country: parsed.country,
           status: 'ACTIVE',
           onboardingStatus: 'PENDING_APPROVAL',
+          paymentTermsId: 'term-due-on-order',
+          creditLimit: 0,
         },
       });
 

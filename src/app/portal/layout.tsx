@@ -68,7 +68,12 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
               <div className="hidden md:flex items-center space-x-2 bg-slate-800/80 border border-slate-700/80 rounded-lg px-3 py-1 text-xs">
                 <Building2 className="w-3.5 h-3.5 text-indigo-400" />
                 <span className="font-semibold text-slate-200">{sessionData.customerCompany.companyName}</span>
-                <span className="text-slate-400">| Limit: Rs.{sessionData.customerCompany.creditLimit?.toLocaleString()}</span>
+                <span className="text-slate-400">|</span>
+                {sessionData.customerCompany.paymentTermsId === 'term-due-on-order' ? (
+                  <span className="text-amber-400 font-semibold">Due on Order - 100% Advance</span>
+                ) : (
+                  <span className="text-emerald-400 font-semibold">Credit: {sessionData.customerCompany.paymentTerms?.name || 'Net 30'}</span>
+                )}
               </div>
             )}
           </div>
