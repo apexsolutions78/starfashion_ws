@@ -75,7 +75,7 @@ export default function AdminOrdersPage() {
               <div className="flex items-center space-x-4">
                 <div className="text-right">
                   <div className="text-xs text-slate-500 uppercase font-semibold">Grand Total</div>
-                  <div className="text-lg font-extrabold text-emerald-400">€{order.grandTotal.toFixed(2)}</div>
+                  <div className="text-lg font-extrabold text-emerald-400">Rs.{order.grandTotal.toFixed(2)}</div>
                 </div>
 
                 {order.status === 'SUBMITTED' && (

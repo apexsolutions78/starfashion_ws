@@ -420,7 +420,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-2">Price (€) *</label>
+                  <label className="block text-xs font-medium text-slate-300 mb-2">Price (Rs.) *</label>
                   <input
                     type="number"
                     step="0.01"

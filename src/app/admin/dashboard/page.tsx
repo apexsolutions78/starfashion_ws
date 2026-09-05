@@ -42,7 +42,7 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
           <div className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-1">Total Gross Sales</div>
-          <div className="text-3xl font-extrabold text-emerald-400">€{totalGrossSales.toFixed(2)}</div>
+          <div className="text-3xl font-extrabold text-emerald-400">Rs.{totalGrossSales.toFixed(2)}</div>
           <div className="text-[11px] text-slate-500 mt-2">{orders.length} total orders submitted</div>
         </div>
 
@@ -55,7 +55,7 @@ export default function AdminDashboardPage() {
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
           <div className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-1">Payments Collected</div>
           <div className="text-3xl font-extrabold text-indigo-400">
-            €{payments.reduce((sum, p) => sum + p.amount, 0).toFixed(2)}
+            Rs.{payments.reduce((sum, p) => sum + p.amount, 0).toFixed(2)}
           </div>
           <div className="text-[11px] text-slate-500 mt-2">{payments.length} posted transactions</div>
         </div>
@@ -135,7 +135,7 @@ export default function AdminDashboardPage() {
                     {o.status}
                   </span>
                 </td>
-                <td className="py-3 px-4 text-right font-bold text-emerald-400">€{o.grandTotal.toFixed(2)}</td>
+                <td className="py-3 px-4 text-right font-bold text-emerald-400">Rs.{o.grandTotal.toFixed(2)}</td>
                 <td className="py-3 px-4 text-right text-slate-500">{new Date(o.submittedAt).toLocaleDateString()}</td>
               </tr>
             ))}

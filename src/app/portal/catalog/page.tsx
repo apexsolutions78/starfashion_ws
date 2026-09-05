@@ -189,7 +189,7 @@ export default function WholesaleCatalogPage() {
                   <div className="flex items-center space-x-6">
                     <div className="text-right">
                       <div className="text-xs text-slate-400 uppercase font-semibold">Base Wholesale Price</div>
-                      <div className="text-xl font-extrabold text-slate-900">€{product.basePrice.toFixed(2)}</div>
+                      <div className="text-xl font-extrabold text-slate-900">Rs.{product.basePrice.toFixed(2)}</div>
                     </div>
 
                     <button
@@ -290,7 +290,7 @@ export default function WholesaleCatalogPage() {
                         Selected: <strong className="font-bold">{totalProductQty} units</strong> across variants
                       </span>
                       <span className="text-indigo-900 font-bold">
-                        Article Merchandise Subtotal: €{totalProductGross.toFixed(2)} (before volume discount)
+                        Article Merchandise Subtotal: Rs.{totalProductGross.toFixed(2)} (before volume discount)
                       </span>
                     </div>
                   )}

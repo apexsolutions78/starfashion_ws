@@ -338,7 +338,7 @@ export default function AdminProductsPage() {
                       <h3 className="font-semibold text-white text-sm">{product.name}</h3>
                       <p className="text-slate-500 text-xs">{product.articleNumber}</p>
                     </div>
-                    <span className="text-emerald-400 font-bold text-sm">€{product.basePrice.toFixed(2)}</span>
+                    <span className="text-emerald-400 font-bold text-sm">Rs.{product.basePrice.toFixed(2)}</span>
                   </div>
 
                   <div className="flex items-center space-x-2 text-xs text-slate-400 mb-3">

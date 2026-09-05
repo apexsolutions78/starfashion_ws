@@ -93,7 +93,7 @@ export class OrderService {
 
       if (company.creditLimit > 0 && currentBalance + quote.netSubtotal > company.creditLimit) {
         throw new Error(
-          `Credit limit exceeded. Current balance: €${currentBalance.toFixed(2)}, Order Net Total: €${quote.netSubtotal.toFixed(2)}, Credit Limit: €${company.creditLimit.toFixed(2)}`
+          `Credit limit exceeded. Current balance: Rs.${currentBalance.toFixed(2)}, Order Net Total: Rs.${quote.netSubtotal.toFixed(2)}, Credit Limit: Rs.${company.creditLimit.toFixed(2)}`
         );
       }
 

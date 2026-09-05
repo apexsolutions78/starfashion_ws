@@ -9,7 +9,7 @@ async function main() {
   // 1. Seed System Settings
   const defaultSettings = [
     { key: 'system_currency', value: 'EUR', dataType: 'STRING', description: 'Base wholesale currency' },
-    { key: 'system_currency_symbol', value: '€', dataType: 'STRING', description: 'Currency symbol' },
+    { key: 'system_currency_symbol', value: 'Rs.', dataType: 'STRING', description: 'Currency symbol' },
     { key: 'reserve_stock_on', value: 'SUBMITTED', dataType: 'STRING', description: 'Inventory reservation policy' },
     { key: 'enforce_credit_limit', value: 'true', dataType: 'BOOLEAN', description: 'Block orders exceeding credit limit' },
   ];

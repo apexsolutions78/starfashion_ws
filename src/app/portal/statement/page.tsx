@@ -43,7 +43,7 @@ export default function CustomerStatementPage() {
           <div className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-1">
             Current Outstanding Balance
           </div>
-          <div className="text-3xl font-extrabold text-indigo-400">€{currentBalance.toFixed(2)}</div>
+          <div className="text-3xl font-extrabold text-indigo-400">Rs.{currentBalance.toFixed(2)}</div>
           <div className="text-xs text-slate-400 mt-2">Derived from posted ledger debits & credits</div>
         </div>
 
@@ -51,7 +51,7 @@ export default function CustomerStatementPage() {
           <div className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-1">
             Approved Credit Limit
           </div>
-          <div className="text-3xl font-extrabold text-slate-900">€{creditLimit.toFixed(2)}</div>
+          <div className="text-3xl font-extrabold text-slate-900">Rs.{creditLimit.toFixed(2)}</div>
           <div className="text-xs text-emerald-600 font-semibold mt-2">
             Payment Terms: {company?.paymentTerms?.name || 'Net 30'}
           </div>
@@ -61,7 +61,7 @@ export default function CustomerStatementPage() {
           <div className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-1">
             Available Credit Line
           </div>
-          <div className="text-3xl font-extrabold text-emerald-600">€{availableCredit.toFixed(2)}</div>
+          <div className="text-3xl font-extrabold text-emerald-600">Rs.{availableCredit.toFixed(2)}</div>
           <div className="text-xs text-slate-400 mt-2">Available for new wholesale orders</div>
         </div>
       </div>
@@ -106,13 +106,13 @@ export default function CustomerStatementPage() {
                   </td>
                   <td className="py-3 px-4 text-slate-700">{tx.notes || tx.referenceType}</td>
                   <td className="py-3 px-4 text-right font-semibold text-amber-700">
-                    {tx.debit > 0 ? `€${tx.debit.toFixed(2)}` : '-'}
+                    {tx.debit > 0 ? `Rs.${tx.debit.toFixed(2)}` : '-'}
                   </td>
                   <td className="py-3 px-4 text-right font-semibold text-emerald-600">
-                    {tx.credit > 0 ? `€${tx.credit.toFixed(2)}` : '-'}
+                    {tx.credit > 0 ? `Rs.${tx.credit.toFixed(2)}` : '-'}
                   </td>
                   <td className="py-3 px-4 text-right font-bold text-slate-900">
-                    €{tx.runningBalance.toFixed(2)}
+                    Rs.{tx.runningBalance.toFixed(2)}
                   </td>
                 </tr>
               ))}

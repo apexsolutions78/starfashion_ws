@@ -115,13 +115,13 @@ export default function CartPage() {
                           SKU: {item.sku} | Color: {item.colorName} | Size: {item.sizeName}
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-center text-slate-600">€{item.baseUnitPrice.toFixed(2)}</td>
+                      <td className="py-3 px-4 text-center text-slate-600">Rs.{item.baseUnitPrice.toFixed(2)}</td>
                       <td className="py-3 px-4 text-center font-bold text-slate-900">{item.quantity}</td>
-                      <td className="py-3 px-4 text-right text-slate-500">€{item.lineGross.toFixed(2)}</td>
+                      <td className="py-3 px-4 text-right text-slate-500">Rs.{item.lineGross.toFixed(2)}</td>
                       <td className="py-3 px-4 text-right text-emerald-600 font-semibold">
-                        {item.lineDiscount > 0 ? `-€${item.lineDiscount.toFixed(2)}` : '€0.00'}
+                        {item.lineDiscount > 0 ? `-Rs.${item.lineDiscount.toFixed(2)}` : 'Rs.0.00'}
                       </td>
-                      <td className="py-3 px-4 text-right font-bold text-slate-900">€{item.lineNet.toFixed(2)}</td>
+                      <td className="py-3 px-4 text-right font-bold text-slate-900">Rs.{item.lineNet.toFixed(2)}</td>
                       <td className="py-3 px-4 text-center">
                         <button
                           onClick={() => handleRemoveItem(item.variantId)}
@@ -153,19 +153,19 @@ export default function CartPage() {
 
                 <div className="flex justify-between text-slate-300">
                   <span>Gross Merchandise Subtotal:</span>
-                  <span>€{quote.grossSubtotal.toFixed(2)}</span>
+                  <span>Rs.{quote.grossSubtotal.toFixed(2)}</span>
                 </div>
 
                 <div className="flex justify-between text-emerald-400 font-semibold">
                   <span>
                     Volume Tier Discount ({quote.discountPercent}%):
                   </span>
-                  <span>-€{quote.discountTotal.toFixed(2)}</span>
+                  <span>-Rs.{quote.discountTotal.toFixed(2)}</span>
                 </div>
 
                 <div className="pt-3 border-t border-slate-800 flex justify-between text-base font-bold">
                   <span>Net Merchandise Total:</span>
-                  <span className="text-indigo-400">€{quote.netSubtotal.toFixed(2)}</span>
+                  <span className="text-indigo-400">Rs.{quote.netSubtotal.toFixed(2)}</span>
                 </div>
               </div>
 

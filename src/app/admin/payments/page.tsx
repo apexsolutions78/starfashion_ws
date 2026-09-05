@@ -63,7 +63,7 @@ export default function AdminPaymentsPage() {
         throw new Error(data.error || 'Failed to record payment');
       }
 
-      setMessage(`Payment of €${parseFloat(amount).toFixed(2)} recorded & posted to ledger.`);
+      setMessage(`Payment of Rs.${parseFloat(amount).toFixed(2)} recorded & posted to ledger.`);
       setShowModal(false);
       setAmount('');
       setReferenceNumber('');
@@ -128,7 +128,7 @@ export default function AdminPaymentsPage() {
               </div>
 
               <div>
-                <label className="block text-slate-400 font-semibold mb-1">Payment Amount (€)</label>
+                <label className="block text-slate-400 font-semibold mb-1">Payment Amount (Rs.)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -207,7 +207,7 @@ export default function AdminPaymentsPage() {
                 <td className="py-3 px-4 text-slate-400">
                   {p.paymentMethod} {p.referenceNumber && `(${p.referenceNumber})`}
                 </td>
-                <td className="py-3 px-4 text-right font-bold text-emerald-400">€{p.amount.toFixed(2)}</td>
+                <td className="py-3 px-4 text-right font-bold text-emerald-400">Rs.{p.amount.toFixed(2)}</td>
                 <td className="py-3 px-4 text-right text-slate-500">{new Date(p.paymentDate).toLocaleDateString()}</td>
               </tr>
             ))}

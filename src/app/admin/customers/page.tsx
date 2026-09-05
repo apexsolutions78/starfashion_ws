@@ -48,7 +48,7 @@ export default function AdminCustomersPage() {
             <div className="grid grid-cols-2 gap-4 text-xs">
               <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
                 <div className="text-slate-500 font-semibold mb-0.5">Credit Limit</div>
-                <div className="font-extrabold text-white text-sm">€{c.creditLimit?.toFixed(2)}</div>
+                <div className="font-extrabold text-white text-sm">Rs.{c.creditLimit?.toFixed(2)}</div>
               </div>
 
               <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">

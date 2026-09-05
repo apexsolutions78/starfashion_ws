@@ -79,7 +79,7 @@ export default function CustomerOrdersPage() {
                   <div className="flex items-center space-x-6">
                     <div className="text-right">
                       <div className="text-xs text-slate-400 uppercase font-semibold">Net Total</div>
-                      <div className="text-lg font-extrabold text-slate-900">€{order.grandTotal.toFixed(2)}</div>
+                      <div className="text-lg font-extrabold text-slate-900">Rs.{order.grandTotal.toFixed(2)}</div>
                     </div>
 
                     {isExpanded ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
@@ -112,10 +112,10 @@ export default function CustomerOrdersPage() {
                                 Art #: {item.articleNumberSnapshot} | SKU: {item.skuSnapshot} | {item.colorSnapshot}/{item.sizeSnapshot}
                               </div>
                             </td>
-                            <td className="py-2.5 px-3 text-center text-slate-600">€{item.baseUnitPriceSnapshot.toFixed(2)}</td>
+                            <td className="py-2.5 px-3 text-center text-slate-600">Rs.{item.baseUnitPriceSnapshot.toFixed(2)}</td>
                             <td className="py-2.5 px-3 text-center font-bold text-slate-900">{item.quantity}</td>
-                            <td className="py-2.5 px-3 text-right text-emerald-600 font-semibold">-€{item.lineDiscount.toFixed(2)}</td>
-                            <td className="py-2.5 px-3 text-right font-bold text-slate-900">€{item.lineNet.toFixed(2)}</td>
+                            <td className="py-2.5 px-3 text-right text-emerald-600 font-semibold">-Rs.{item.lineDiscount.toFixed(2)}</td>
+                            <td className="py-2.5 px-3 text-right font-bold text-slate-900">Rs.{item.lineNet.toFixed(2)}</td>
                           </tr>
                         ))}
                       </tbody>
