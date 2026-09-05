@@ -12,6 +12,7 @@ import {
   ShieldAlert,
   LogOut,
   ShoppingBag,
+  Tags,
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -39,6 +40,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const navItems = [
     { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/admin/products', label: 'Products', icon: Tags },
     { href: '/admin/orders', label: 'Order Processing', icon: Package },
     { href: '/admin/tiers', label: 'Pricing Tiers', icon: Sliders },
     { href: '/admin/payments', label: 'Record Payments', icon: CreditCard },
