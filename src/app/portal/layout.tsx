@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShoppingBag, ShoppingCart, Package, FileText, LogOut, User, Building2, Tag, CreditCard, MapPin } from 'lucide-react';
+import { ShoppingBag, ShoppingCart, Package, FileText, LogOut, User, Tag, CreditCard } from 'lucide-react';
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -63,20 +63,6 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
               />
               <span className="font-bold text-lg tracking-tight hidden sm:inline">StarFashion B2B</span>
             </Link>
-
-            {/* Customer Company Badge */}
-            {sessionData?.customerCompany && (
-              <div className="hidden md:flex items-center space-x-2 bg-slate-800/80 border border-slate-700/80 rounded-lg px-3 py-1 text-xs">
-                <Building2 className="w-3.5 h-3.5 text-indigo-400" />
-                <span className="font-semibold text-slate-200">{sessionData.customerCompany.companyName}</span>
-                <span className="text-slate-400">|</span>
-                {sessionData.customerCompany.paymentTermsId === 'term-due-on-order' ? (
-                  <span className="text-amber-400 font-semibold">Due on Order - 100% Advance</span>
-                ) : (
-                  <span className="text-emerald-400 font-semibold">Credit: {sessionData.customerCompany.paymentTerms?.name || 'Net 30'}</span>
-                )}
-              </div>
-            )}
           </div>
 
           {/* Navigation Links */}
