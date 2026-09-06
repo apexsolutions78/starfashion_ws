@@ -69,6 +69,7 @@ model CustomerCompany {
   payments            Payment[]
   accountTransactions AccountTransaction[]
   creditNotes         CreditNote[]
+  notifications       CustomerNotification[]
 
   @@map("customer_companies")
 }
@@ -319,7 +320,7 @@ model Order {
   id                      String    @id @default(uuid())
   orderNumber             String    @unique
   customerId              String
-  status                  String    @default("SUBMITTED") // "DRAFT" | "SUBMITTED" | "CONFIRMED" | "PROCESSING" | "PACKED" | "SHIPPED" | "COMPLETED" | "CANCELLED" | "ON_HOLD"
+  status                  String    @default("SUBMITTED") // "SUBMITTED" | "PENDING_REVIEW" | "ON_HOLD" | "CONFIRMED" | "PROCESSING" | "PACKED" | "SHIPPED" | "COMPLETED" | "CANCELLED"
   qualifyingQty           Int
   tierIdSnapshot          String?
   discountPercentSnapshot Float     @default(0.0)
@@ -331,8 +332,14 @@ model Order {
   grandTotal              Float
   currency                String    @default("EUR")
   notes                   String?
+  adminNotes              String?
+  holdDays                Int?
+  holdExpiresAt           DateTime?
+  customerReviewed        Boolean   @default(false)
   createdByUserId         String?
+  reviewedByUserId        String?
   submittedAt             DateTime  @default(now())
+  reviewedAt              DateTime?
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
 
@@ -546,4 +553,19 @@ model SystemSetting {
   updatedBy User? @relation("UpdatedSettings", fields: [updatedByUserId], references: [id])
 
   @@map("system_settings")
+}
+
+model CustomerNotification {
+  id          String   @id @default(uuid())
+  customerId  String
+  title       String
+  message     String
+  type        String   @default("INFO") // "INFO" | "ORDER_UPDATE" | "PAYMENT_REMINDER" | "WARNING"
+  orderId     String?
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  customer CustomerCompany @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("customer_notifications")
 }
