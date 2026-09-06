@@ -23,6 +23,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const [session, setSession] = useState<any>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [counts, setCounts] = useState<any>(null);
 
   useEffect(() => {
     fetch('/api/v1/auth/me')
@@ -30,7 +31,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       .then((data) => {
         if (data.success && data.data?.session?.userType === 'ADMIN') {
           setSession(data.data.session);
-          // Fetch user profile to get role
           fetch('/api/v1/admin/profile')
             .then((res) => res.json())
             .then((profileData) => {
@@ -45,25 +45,49 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       .catch(() => router.push('/login'));
   }, [pathname]);
 
+  // Fetch sidebar badge counts
+  useEffect(() => {
+    const fetchCounts = () => {
+      fetch('/api/v1/admin/counts')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) setCounts(data.data);
+        })
+        .catch(() => {});
+    };
+
+    fetchCounts();
+    const interval = setInterval(fetchCounts, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleLogout = async () => {
     await fetch('/api/v1/auth/logout', { method: 'POST' });
     router.push('/login');
   };
 
   const navItems = [
-    { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['MASTER_ADMIN', 'ADMIN', 'USER'] },
-    { href: '/admin/products', label: 'Products', icon: Tags, roles: ['MASTER_ADMIN', 'ADMIN', 'USER'] },
-    { href: '/admin/stock', label: 'New Stock', icon: Box, roles: ['MASTER_ADMIN'] },
-    { href: '/admin/orders', label: 'Order Processing', icon: Package, roles: ['MASTER_ADMIN', 'ADMIN'] },
-    { href: '/admin/tiers', label: 'Pricing Tiers', icon: Sliders, roles: ['MASTER_ADMIN', 'ADMIN'] },
-    { href: '/admin/payments', label: 'Record Payments', icon: CreditCard, roles: ['MASTER_ADMIN', 'ADMIN'] },
-    { href: '/admin/customers', label: 'Customers & Credit', icon: Users, roles: ['MASTER_ADMIN', 'ADMIN'] },
-    { href: '/admin/audit-logs', label: 'Audit Trail', icon: ShieldAlert, roles: ['MASTER_ADMIN', 'ADMIN'] },
-    { href: '/admin/users', label: 'User Management', icon: UserPlus, roles: ['MASTER_ADMIN'] },
-    { href: '/admin/profile', label: 'Admin Profile', icon: UserCog, roles: ['MASTER_ADMIN', 'ADMIN', 'USER'] },
+    { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['MASTER_ADMIN', 'ADMIN', 'USER'], dot: null },
+    { href: '/admin/products', label: 'Products', icon: Tags, roles: ['MASTER_ADMIN', 'ADMIN', 'USER'], dot: null },
+    { href: '/admin/stock', label: 'New Stock', icon: Box, roles: ['MASTER_ADMIN'], dot: counts?.lowStock > 0 ? 'amber' : null, count: counts?.lowStock },
+    { href: '/admin/orders', label: 'Order Processing', icon: Package, roles: ['MASTER_ADMIN', 'ADMIN'], dot: counts?.newOrders > 0 ? 'red' : null, count: counts?.newOrders },
+    { href: '/admin/tiers', label: 'Pricing Tiers', icon: Sliders, roles: ['MASTER_ADMIN', 'ADMIN'], dot: null },
+    { href: '/admin/payments', label: 'Record Payments', icon: CreditCard, roles: ['MASTER_ADMIN', 'ADMIN'], dot: counts?.pendingPayments > 0 ? 'purple' : null, count: counts?.pendingPayments },
+    { href: '/admin/customers', label: 'Customers & Credit', icon: Users, roles: ['MASTER_ADMIN', 'ADMIN'], dot: counts?.pendingApprovals > 0 ? 'blue' : null, count: counts?.pendingApprovals },
+    { href: '/admin/audit-logs', label: 'Audit Trail', icon: ShieldAlert, roles: ['MASTER_ADMIN', 'ADMIN'], dot: null },
+    { href: '/admin/users', label: 'User Management', icon: UserPlus, roles: ['MASTER_ADMIN'], dot: null },
+    { href: '/admin/profile', label: 'Admin Profile', icon: UserCog, roles: ['MASTER_ADMIN', 'ADMIN', 'USER'], dot: null },
   ];
 
   const filteredNavItems = navItems.filter(item => !userRole || item.roles.includes(userRole));
+
+  const dotColors: Record<string, string> = {
+    red: 'bg-red-500 shadow-red-500/50',
+    amber: 'bg-amber-500 shadow-amber-500/50',
+    blue: 'bg-blue-500 shadow-blue-500/50',
+    purple: 'bg-purple-500 shadow-purple-500/50',
+    green: 'bg-emerald-500 shadow-emerald-500/50',
+  };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col md:flex-row">
@@ -86,6 +110,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {filteredNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
+              const dotColor = item.dot ? dotColors[item.dot] : null;
               return (
                 <Link
                   key={item.href}
@@ -96,8 +121,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
-                  <span>{item.label}</span>
+                  <div className="relative">
+                    <Icon className="w-4 h-4" />
+                    {dotColor && (
+                      <span className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full ${dotColor} shadow-md animate-pulse`} />
+                    )}
+                  </div>
+                  <span className="flex-1">{item.label}</span>
+                  {item.count > 0 && (
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
+                      item.dot === 'red' ? 'bg-red-500/20 text-red-400' :
+                      item.dot === 'amber' ? 'bg-amber-500/20 text-amber-400' :
+                      item.dot === 'blue' ? 'bg-blue-500/20 text-blue-400' :
+                      item.dot === 'purple' ? 'bg-purple-500/20 text-purple-400' :
+                      'bg-slate-500/20 text-slate-400'
+                    }`}>
+                      {item.count}
+                    </span>
+                  )}
                 </Link>
               );
             })}
