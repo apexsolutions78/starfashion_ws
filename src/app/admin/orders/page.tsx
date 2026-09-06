@@ -177,7 +177,7 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex items-center justify-between">
+      <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Order Processing Queue</h1>
           <p className="text-slate-400 text-xs mt-1">Review orders, adjust quantities, set hold periods, and send to customers.</p>
@@ -275,7 +275,7 @@ export default function AdminOrdersPage() {
 
             <div className="p-5 border-b border-slate-800">
               <h3 className="text-sm font-semibold text-white mb-3">Customer Information</h3>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div><span className="text-slate-400">Company:</span> <span className="text-white ml-2 font-medium">{selectedOrder.customer?.companyName}</span></div>
                 <div><span className="text-slate-400">Qualifying Qty:</span> <span className="text-white ml-2 font-medium">{selectedOrder.qualifyingQty} units</span></div>
               </div>
@@ -283,6 +283,7 @@ export default function AdminOrdersPage() {
 
             <div className="p-5">
               <h3 className="text-sm font-semibold text-white mb-3">Order Items</h3>
+              <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-slate-800 text-slate-400">
@@ -305,6 +306,7 @@ export default function AdminOrdersPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
 
             <div className="p-5 border-t border-slate-800 flex justify-end space-x-3">
@@ -331,6 +333,7 @@ export default function AdminOrdersPage() {
 
             <div className="p-5 space-y-4">
               {/* Editable Items */}
+              <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-slate-800 text-slate-400">
@@ -371,6 +374,7 @@ export default function AdminOrdersPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
 
               {/* Total */}
               <div className="bg-slate-950/50 rounded-xl p-4 flex justify-between text-sm">
@@ -379,7 +383,7 @@ export default function AdminOrdersPage() {
               </div>
 
               {/* Hold Days & Notes */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-2">Hold Period (Days)</label>
                   <input

@@ -233,7 +233,7 @@ export default function CustomerOrdersPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-4">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                     <div className="text-right">
                       <div className="text-xs text-slate-400 uppercase font-semibold">Grand Total</div>
                       <div className="text-lg font-extrabold text-slate-900">Rs.{order.grandTotal.toFixed(2)}</div>
@@ -346,6 +346,7 @@ export default function CustomerOrdersPage() {
                       <span>Snapshot Tier Discount: {order.discountPercentSnapshot}%</span>
                     </div>
 
+                    <div className="overflow-x-auto">
                     <table className="w-full text-xs bg-white rounded-xl border border-slate-200 overflow-hidden">
                       <thead>
                         <tr className="border-b border-slate-200 bg-slate-50 text-slate-400 uppercase font-semibold text-[10px]">
@@ -373,6 +374,7 @@ export default function CustomerOrdersPage() {
                         ))}
                       </tbody>
                     </table>
+                    </div>
 
                     {/* Payment Summary */}
                     <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-2">

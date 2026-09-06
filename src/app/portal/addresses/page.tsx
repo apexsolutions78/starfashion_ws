@@ -123,7 +123,7 @@ export default function PortalAddressesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Shipping Addresses</h1>
           <p className="text-slate-500 text-sm mt-1">Manage your shipping and billing addresses for order dispatch.</p>
@@ -247,7 +247,7 @@ export default function PortalAddressesPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">City *</label>
                   <input
@@ -268,7 +268,7 @@ export default function PortalAddressesPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Postal Code *</label>
                   <input

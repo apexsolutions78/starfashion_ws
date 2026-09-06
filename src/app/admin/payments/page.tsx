@@ -189,30 +189,32 @@ export default function AdminPaymentsPage() {
 
       {/* Payment Records Table */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
-        <table className="w-full text-xs text-slate-300">
-          <thead>
-            <tr className="border-b border-slate-800 bg-slate-950 text-slate-500 uppercase font-semibold text-[10px]">
-              <th className="text-left py-3 px-4">Payment #</th>
-              <th className="text-left py-3 px-4">Customer Company</th>
-              <th className="text-left py-3 px-4">Method & Ref</th>
-              <th className="text-right py-3 px-4">Amount</th>
-              <th className="text-right py-3 px-4">Date</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-800">
-            {payments.map((p) => (
-              <tr key={p.id} className="hover:bg-slate-800/50">
-                <td className="py-3 px-4 font-bold text-white">{p.paymentNumber}</td>
-                <td className="py-3 px-4 text-slate-300">{p.customer?.companyName}</td>
-                <td className="py-3 px-4 text-slate-400">
-                  {p.paymentMethod} {p.referenceNumber && `(${p.referenceNumber})`}
-                </td>
-                <td className="py-3 px-4 text-right font-bold text-emerald-400">Rs.{p.amount.toFixed(2)}</td>
-                <td className="py-3 px-4 text-right text-slate-500">{new Date(p.paymentDate).toLocaleDateString()}</td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs text-slate-300">
+            <thead>
+              <tr className="border-b border-slate-800 bg-slate-950 text-slate-500 uppercase font-semibold text-[10px]">
+                <th className="text-left py-3 px-4">Payment #</th>
+                <th className="text-left py-3 px-4">Customer Company</th>
+                <th className="text-left py-3 px-4">Method & Ref</th>
+                <th className="text-right py-3 px-4">Amount</th>
+                <th className="text-right py-3 px-4">Date</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-800">
+              {payments.map((p) => (
+                <tr key={p.id} className="hover:bg-slate-800/50">
+                  <td className="py-3 px-4 font-bold text-white">{p.paymentNumber}</td>
+                  <td className="py-3 px-4 text-slate-300">{p.customer?.companyName}</td>
+                  <td className="py-3 px-4 text-slate-400">
+                    {p.paymentMethod} {p.referenceNumber && `(${p.referenceNumber})`}
+                  </td>
+                  <td className="py-3 px-4 text-right font-bold text-emerald-400">Rs.{p.amount.toFixed(2)}</td>
+                  <td className="py-3 px-4 text-right text-slate-500">{new Date(p.paymentDate).toLocaleDateString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

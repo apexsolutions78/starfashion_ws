@@ -76,6 +76,7 @@ export default function CustomerStatementPage() {
         {statement?.transactions.length === 0 ? (
           <div className="py-12 text-center text-slate-400 text-xs">No account transactions posted yet.</div>
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50 text-slate-400 uppercase font-semibold text-[11px]">
@@ -118,6 +119,7 @@ export default function CustomerStatementPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

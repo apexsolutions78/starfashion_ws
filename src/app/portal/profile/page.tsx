@@ -150,7 +150,7 @@ export default function PortalProfilePage() {
               <Building2 className="w-4 h-4 text-indigo-500" />
               <span>Company Information</span>
             </h2>
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 <div className="text-xs text-slate-400 mb-0.5">Company Name</div>
                 <div className="text-slate-900 font-medium">{company?.companyName || '—'}</div>
@@ -186,7 +186,7 @@ export default function PortalProfilePage() {
               <User className="w-4 h-4 text-indigo-500" />
               <span>Login Details</span>
             </h2>
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 <div className="text-xs text-slate-400 mb-0.5">Email</div>
                 <div className="text-slate-900 font-medium flex items-center space-x-1">
@@ -316,7 +316,7 @@ export default function PortalProfilePage() {
                   className="w-full border border-slate-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-indigo-500" placeholder="Apartment, suite, etc." />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">City *</label>
                   <input type="text" value={addrForm.city} onChange={(e) => setAddrForm({ ...addrForm, city: e.target.value })}
@@ -329,7 +329,7 @@ export default function PortalProfilePage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Postal Code</label>
                   <input type="text" value={addrForm.postalCode} onChange={(e) => setAddrForm({ ...addrForm, postalCode: e.target.value })}

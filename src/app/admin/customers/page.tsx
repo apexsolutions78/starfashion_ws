@@ -631,7 +631,7 @@ export default function AdminCustomersPage() {
                 </div>
               ) : statementData ? (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-3 gap-3 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                     <div className="bg-slate-950/50 rounded-lg p-3 text-center">
                       <div className="text-slate-500 text-xs">Opening Balance</div>
                       <div className="font-bold text-white">Rs.{statementData.openingBalance.toFixed(2)}</div>
@@ -646,28 +646,30 @@ export default function AdminCustomersPage() {
                     </div>
                   </div>
 
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="border-b border-slate-800 text-slate-400">
-                        <th className="text-left py-2">Date</th>
-                        <th className="text-left py-2">Description</th>
-                        <th className="text-right py-2">Debit</th>
-                        <th className="text-right py-2">Credit</th>
-                        <th className="text-right py-2">Balance</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/50">
-                      {statementData.transactions.map((tx: any, idx: number) => (
-                        <tr key={idx}>
-                          <td className="py-2 text-slate-300">{new Date(tx.createdAt).toLocaleDateString()}</td>
-                          <td className="py-2 text-white">{tx.description}</td>
-                          <td className="py-2 text-right text-amber-400">{tx.debit > 0 ? `Rs.${tx.debit.toFixed(2)}` : '-'}</td>
-                          <td className="py-2 text-right text-emerald-400">{tx.credit > 0 ? `Rs.${tx.credit.toFixed(2)}` : '-'}</td>
-                          <td className="py-2 text-right text-slate-300 font-medium">Rs.{tx.runningBalance.toFixed(2)}</td>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-slate-800 text-slate-400">
+                          <th className="text-left py-2">Date</th>
+                          <th className="text-left py-2">Description</th>
+                          <th className="text-right py-2">Debit</th>
+                          <th className="text-right py-2">Credit</th>
+                          <th className="text-right py-2">Balance</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/50">
+                        {statementData.transactions.map((tx: any, idx: number) => (
+                          <tr key={idx}>
+                            <td className="py-2 text-slate-300">{new Date(tx.createdAt).toLocaleDateString()}</td>
+                            <td className="py-2 text-white">{tx.description}</td>
+                            <td className="py-2 text-right text-amber-400">{tx.debit > 0 ? `Rs.${tx.debit.toFixed(2)}` : '-'}</td>
+                            <td className="py-2 text-right text-emerald-400">{tx.credit > 0 ? `Rs.${tx.credit.toFixed(2)}` : '-'}</td>
+                            <td className="py-2 text-right text-slate-300 font-medium">Rs.{tx.runningBalance.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               ) : (
                 <p className="text-center text-slate-500 py-10">No statement data available</p>

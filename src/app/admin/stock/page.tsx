@@ -160,7 +160,7 @@ export default function AdminStockPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex items-center justify-between">
+      <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">New Stock</h1>
           <p className="text-slate-400 text-xs mt-1">Manage stock levels, mark articles in production, and set estimated availability dates.</p>
@@ -313,7 +313,7 @@ export default function AdminStockPage() {
               {/* Current Stock */}
               <div className="bg-slate-950/50 rounded-xl p-4">
                 <div className="text-xs text-slate-400 uppercase font-semibold mb-2">Current Stock</div>
-                <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
                   <div>
                     <div className="text-2xl font-extrabold text-white">{editVariant.totalStock}</div>
                     <div className="text-[10px] text-slate-500">On Hand</div>
@@ -450,7 +450,7 @@ export default function AdminStockPage() {
                 <div className="space-y-2">
                   <div className="text-xs font-semibold text-slate-400 uppercase">Selected Variants ({bulkItems.length})</div>
                   {bulkItems.map((item) => (
-                    <div key={item.variantId} className="bg-slate-950/50 border border-slate-800 rounded-xl p-3 flex items-center space-x-4">
+                    <div key={item.variantId} className="bg-slate-950/50 border border-slate-800 rounded-xl p-3 flex items-center flex-wrap space-x-4">
                       <div className="flex-1 min-w-0">
                         <div className="text-sm text-white font-medium">{item.productName}</div>
                         <div className="text-[10px] text-slate-400">{item.sku} | {item.color}/{item.size}</div>

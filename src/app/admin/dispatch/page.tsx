@@ -199,7 +199,7 @@ export default function AdminDispatchPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-4">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                     <div className="text-right">
                       <div className="text-xs text-slate-500 uppercase font-semibold">Grand Total</div>
                       <div className="text-lg font-extrabold text-emerald-400">Rs.{order.grandTotal.toFixed(2)}</div>
@@ -255,7 +255,7 @@ export default function AdminDispatchPage() {
                     <User className="w-4 h-4 text-emerald-400" />
                     <span>Customer Details</span>
                   </h3>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                     <div><span className="text-slate-400">Company:</span> <span className="text-white ml-2 font-medium">{selectedOrder.customer?.companyName}</span></div>
                     <div><span className="text-slate-400">Contact:</span> <span className="text-white ml-2">{selectedOrder.customer?.contactName || '—'}</span></div>
                     <div><span className="text-slate-400">Phone:</span> <span className="text-white ml-2">{selectedOrder.customer?.phone || '—'}</span></div>
@@ -286,6 +286,7 @@ export default function AdminDispatchPage() {
                 {/* Order Items */}
                 <div className="bg-slate-950/50 rounded-xl p-4">
                   <h3 className="text-sm font-semibold text-white mb-3">Order Items</h3>
+                  <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="border-b border-slate-800 text-slate-400">
@@ -308,6 +309,7 @@ export default function AdminDispatchPage() {
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 </div>
 
                 {/* Summary */}

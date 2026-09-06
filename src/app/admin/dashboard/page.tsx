@@ -115,32 +115,34 @@ export default function AdminDashboardPage() {
           </Link>
         </div>
 
-        <table className="w-full text-xs text-slate-300">
-          <thead>
-            <tr className="border-b border-slate-800 bg-slate-950 text-slate-500 uppercase font-semibold text-[10px]">
-              <th className="text-left py-3 px-4">Order #</th>
-              <th className="text-left py-3 px-4">Customer Company</th>
-              <th className="text-center py-3 px-4">Status</th>
-              <th className="text-right py-3 px-4">Net Total</th>
-              <th className="text-right py-3 px-4">Date</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-800">
-            {orders.slice(0, 5).map((o) => (
-              <tr key={o.id} className="hover:bg-slate-800/50">
-                <td className="py-3 px-4 font-bold text-white">{o.orderNumber}</td>
-                <td className="py-3 px-4 text-slate-300">{o.customer?.companyName}</td>
-                <td className="py-3 px-4 text-center">
-                  <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                    {o.status}
-                  </span>
-                </td>
-                <td className="py-3 px-4 text-right font-bold text-emerald-400">Rs.{o.grandTotal.toFixed(2)}</td>
-                <td className="py-3 px-4 text-right text-slate-500">{new Date(o.submittedAt).toLocaleDateString()}</td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs text-slate-300">
+            <thead>
+              <tr className="border-b border-slate-800 bg-slate-950 text-slate-500 uppercase font-semibold text-[10px]">
+                <th className="text-left py-3 px-4">Order #</th>
+                <th className="text-left py-3 px-4">Customer Company</th>
+                <th className="text-center py-3 px-4">Status</th>
+                <th className="text-right py-3 px-4">Net Total</th>
+                <th className="text-right py-3 px-4">Date</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-800">
+              {orders.slice(0, 5).map((o) => (
+                <tr key={o.id} className="hover:bg-slate-800/50">
+                  <td className="py-3 px-4 font-bold text-white">{o.orderNumber}</td>
+                  <td className="py-3 px-4 text-slate-300">{o.customer?.companyName}</td>
+                  <td className="py-3 px-4 text-center">
+                    <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      {o.status}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-right font-bold text-emerald-400">Rs.{o.grandTotal.toFixed(2)}</td>
+                  <td className="py-3 px-4 text-right text-slate-500">{new Date(o.submittedAt).toLocaleDateString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

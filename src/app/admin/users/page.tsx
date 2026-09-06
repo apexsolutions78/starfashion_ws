@@ -259,6 +259,7 @@ export default function AdminUsersPage() {
 
       {/* Users Table */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-800 bg-slate-950 text-slate-400 text-xs">
@@ -315,6 +316,7 @@ export default function AdminUsersPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Create/Edit Modal */}
@@ -331,7 +333,7 @@ export default function AdminUsersPage() {
             </div>
 
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-2">First Name *</label>
                   <input

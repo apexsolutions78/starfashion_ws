@@ -227,12 +227,12 @@ export default function AdminProductsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-white">Product Management</h1>
           <p className="text-slate-400 text-sm mt-1">Manage your wholesale product catalogue</p>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-wrap items-center space-x-3">
           <button
             onClick={handleDownloadTemplate}
             className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 transition-colors"
@@ -610,7 +610,7 @@ export default function AdminProductsPage() {
                       <CheckCircle className="w-5 h-5 text-emerald-400" />
                       <span className="text-emerald-400 font-medium">Import Completed</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                       <div>
                         <span className="text-slate-400">Total Rows:</span>
                         <span className="text-white ml-2 font-bold">{importResult.total}</span>
