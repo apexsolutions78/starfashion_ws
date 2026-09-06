@@ -105,6 +105,17 @@ export async function POST(request: NextRequest) {
     const existingPayments = order.payments.reduce((sum, p) => sum + p.amount, 0);
     const balanceRemaining = order.grandTotal - existingPayments;
 
+    // Check if customer has "Due on Order" payment terms - require full payment
+    const customerCompany = await prisma.customerCompany.findUnique({
+      where: { id: customerId },
+      select: { paymentTermsId: true },
+    });
+    const isDueOnOrder = customerCompany?.paymentTermsId === 'term-due-on-order';
+
+    if (isDueOnOrder && amount < balanceRemaining - 0.01) {
+      return ApiUtils.error(`Full payment of Rs.${balanceRemaining.toFixed(2)} is required for this order (Due on Order terms).`);
+    }
+
     if (amount > balanceRemaining + 0.01) { // Allow small rounding tolerance
       return ApiUtils.error(`Amount exceeds balance remaining. Balance: Rs.${balanceRemaining.toFixed(2)}`);
     }

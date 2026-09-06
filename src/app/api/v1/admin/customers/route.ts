@@ -96,10 +96,19 @@ export async function PUT(req: NextRequest) {
     if (minOrderQty !== undefined) updateData.minOrderQty = parseInt(minOrderQty) || 30;
     if (status !== undefined) updateData.status = status;
     if (paymentTermsId !== undefined) {
-      const termExists = await prisma.paymentTerm.findUnique({ where: { id: paymentTermsId } });
-      if (termExists) {
-        updateData.paymentTermsId = paymentTermsId;
+      // Ensure payment term exists, create if needed
+      let termExists = await prisma.paymentTerm.findUnique({ where: { id: paymentTermsId } });
+      if (!termExists) {
+        termExists = await prisma.paymentTerm.create({
+          data: {
+            id: paymentTermsId,
+            name: paymentTermsId === 'term-due-on-order' ? 'Due on Order' : paymentTermsId,
+            daysDue: 0,
+            description: '100% advance payment required before order processing',
+          },
+        });
       }
+      updateData.paymentTermsId = paymentTermsId;
     }
 
     const customer = await prisma.customerCompany.update({

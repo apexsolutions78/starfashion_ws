@@ -61,9 +61,10 @@ export default function CartPage() {
     setSubmitting(true);
     setOrderError(null);
 
-    // If customer requires full payment, show payment form first
+    // If customer requires full payment, show payment form first with full amount
     if (requiresFullPayment && !showPayment) {
       setSubmitting(false);
+      setPaymentAmount(totalAmount.toFixed(2));
       setShowPayment(true);
       return;
     }
@@ -91,6 +92,13 @@ export default function CartPage() {
 
   const handleSubmitPayment = async () => {
     if (!createdOrderId || !paymentAmount) return;
+
+    // Validate full payment for Due on Order customers
+    const amountNum = parseFloat(paymentAmount);
+    if (requiresFullPayment && amountNum < totalAmount - 0.01) {
+      setPaymentError(`Full payment of Rs.${totalAmount.toFixed(2)} is required for this order.`);
+      return;
+    }
 
     setSubmittingPayment(true);
     setPaymentError(null);

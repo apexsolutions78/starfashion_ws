@@ -1,14 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Package, Clock, CheckCircle, FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import { Package, Clock, CheckCircle, XCircle, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
 
 export default function CustomerOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  useEffect(() => {
+  const fetchOrders = () => {
     fetch('/api/v1/orders')
       .then((res) => res.json())
       .then((data) => {
@@ -17,7 +20,39 @@ export default function CustomerOrdersPage() {
         }
       })
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchOrders();
   }, []);
+
+  const handleCancelOrder = async (orderId: string) => {
+    setCancellingId(orderId);
+    setMessage(null);
+
+    try {
+      const res = await fetch(`/api/v1/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'CANCEL' }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to cancel order');
+      }
+
+      setMessage({ type: 'success', text: 'Order cancelled successfully' });
+      setConfirmCancelId(null);
+      fetchOrders();
+      setTimeout(() => setMessage(null), 3000);
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message });
+      setTimeout(() => setMessage(null), 3000);
+    } finally {
+      setCancellingId(null);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -28,6 +63,8 @@ export default function CustomerOrdersPage() {
       case 'COMPLETED':
       case 'SHIPPED':
         return <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-semibold px-2.5 py-0.5 rounded-full">{status}</span>;
+      case 'CANCELLED':
+        return <span className="bg-red-100 text-red-800 border border-red-300 text-xs font-semibold px-2.5 py-0.5 rounded-full">Cancelled</span>;
       default:
         return <span className="bg-slate-100 text-slate-700 border border-slate-300 text-xs font-semibold px-2.5 py-0.5 rounded-full">{status}</span>;
     }
@@ -44,6 +81,15 @@ export default function CustomerOrdersPage() {
         <p className="text-slate-500 text-sm mt-1">Track submitted orders, inspect historical pricing snapshots, and access invoices.</p>
       </div>
 
+      {message && (
+        <div className={`rounded-lg p-4 flex items-center space-x-2 ${
+          message.type === 'success' ? 'bg-emerald-50 border border-emerald-200 text-emerald-700' : 'bg-red-50 border border-red-200 text-red-700'
+        }`}>
+          {message.type === 'success' ? <CheckCircle className="w-5 h-5 flex-shrink-0" /> : <AlertCircle className="w-5 h-5 flex-shrink-0" />}
+          <span className="text-sm">{message.text}</span>
+        </div>
+      )}
+
       {orders.length === 0 ? (
         <div className="py-20 text-center bg-white rounded-2xl border border-slate-200">
           <Package className="w-12 h-12 text-slate-300 mx-auto mb-3" />
@@ -54,14 +100,15 @@ export default function CustomerOrdersPage() {
         <div className="space-y-4">
           {orders.map((order) => {
             const isExpanded = expandedOrderId === order.id;
+            const canCancel = order.status === 'SUBMITTED';
 
             return (
               <div key={order.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                <div
-                  onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
-                  className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer hover:bg-slate-50 transition-colors"
-                >
-                  <div className="flex items-center space-x-4">
+                <div className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div
+                    onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
+                    className="flex items-center space-x-4 cursor-pointer flex-1"
+                  >
                     <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 flex items-center justify-center font-bold text-sm">
                       ORD
                     </div>
@@ -76,13 +123,45 @@ export default function CustomerOrdersPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-6">
+                  <div className="flex items-center space-x-4">
                     <div className="text-right">
-                      <div className="text-xs text-slate-400 uppercase font-semibold">Net Total</div>
+                      <div className="text-xs text-slate-400 uppercase font-semibold">Grand Total</div>
                       <div className="text-lg font-extrabold text-slate-900">Rs.{order.grandTotal.toFixed(2)}</div>
                     </div>
 
-                    {isExpanded ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
+                    {canCancel && (
+                      <div>
+                        {confirmCancelId === order.id ? (
+                          <div className="flex items-center space-x-1">
+                            <span className="text-[10px] text-red-600 font-semibold mr-1">Cancel?</span>
+                            <button
+                              onClick={() => handleCancelOrder(order.id)}
+                              disabled={cancellingId === order.id}
+                              className="bg-red-600 hover:bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                              {cancellingId === order.id ? '...' : 'Yes'}
+                            </button>
+                            <button
+                              onClick={() => setConfirmCancelId(null)}
+                              className="bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold px-2 py-1 rounded-lg transition-colors"
+                            >
+                              No
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setConfirmCancelId(order.id); }}
+                            className="text-red-500 hover:text-red-700 text-xs font-semibold transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    <button onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}>
+                      {isExpanded ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
+                    </button>
                   </div>
                 </div>
 

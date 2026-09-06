@@ -134,6 +134,16 @@ export default function AdminOrdersPage() {
                   </button>
                 )}
 
+                {order.status === 'SUBMITTED' && (
+                  <button
+                    onClick={() => handleUpdateStatus(order.id, 'CANCELLED')}
+                    disabled={processingId === order.id}
+                    className="bg-red-600 hover:bg-red-500 text-white font-bold text-xs px-3 py-2 rounded-xl shadow-md transition-all disabled:opacity-50"
+                  >
+                    {processingId === order.id ? 'Processing...' : 'Cancel'}
+                  </button>
+                )}
+
                 {order.status === 'CONFIRMED' && (
                   <button
                     onClick={() => handleUpdateStatus(order.id, 'SHIPPED')}
@@ -323,15 +333,26 @@ export default function AdminOrdersPage() {
                 Close
               </button>
               {selectedOrder.status === 'SUBMITTED' && (
-                <button
-                  onClick={() => {
-                    handleUpdateStatus(selectedOrder.id, 'CONFIRMED');
-                    setShowOrderDetail(false);
-                  }}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                >
-                  Confirm & Invoice
-                </button>
+                <>
+                  <button
+                    onClick={() => {
+                      handleUpdateStatus(selectedOrder.id, 'CANCELLED');
+                      setShowOrderDetail(false);
+                    }}
+                    className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Cancel Order
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleUpdateStatus(selectedOrder.id, 'CONFIRMED');
+                      setShowOrderDetail(false);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Confirm & Invoice
+                  </button>
+                </>
               )}
               {selectedOrder.status === 'CONFIRMED' && (
                 <button
