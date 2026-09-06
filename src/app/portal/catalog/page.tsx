@@ -257,7 +257,6 @@ export default function WholesaleCatalogPage() {
                               return <td key={sizeName} className="text-center py-3 px-3 text-slate-300">-</td>;
                             }
 
-                            const stock = variant.inventory.reduce((sum: number, inv: any) => sum + (inv.onHand - inv.reserved), 0);
                             const currentQty = matrixQty[variant.id] || 0;
 
                             return (
@@ -266,15 +265,11 @@ export default function WholesaleCatalogPage() {
                                   <input
                                     type="number"
                                     min="0"
-                                    max={stock}
                                     value={currentQty === 0 ? '' : currentQty}
                                     placeholder="0"
                                     onChange={(e) => handleQtyChange(variant.id, e.target.value)}
                                     className="w-20 text-center bg-white border border-slate-300 rounded-lg py-1.5 px-2 font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                   />
-                                  <span className={`text-[10px] ${stock <= 10 ? 'text-amber-600 font-bold' : 'text-slate-400'}`}>
-                                    Stock: {stock}
-                                  </span>
                                 </div>
                               </td>
                             );

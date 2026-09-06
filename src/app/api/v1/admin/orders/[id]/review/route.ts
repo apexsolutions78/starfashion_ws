@@ -3,6 +3,65 @@ import { getAuthSession } from '@/lib/middleware-auth';
 import { ApiUtils } from '@/lib/api-response';
 import { prisma } from '@/lib/db';
 
+// GET order for admin review with stock info (admin only)
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getAuthSession(request);
+    if (!session || session.userType !== 'ADMIN') {
+      return ApiUtils.forbidden('Admin authorization required');
+    }
+
+    const { id } = await params;
+
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        customer: { select: { companyName: true } },
+        items: {
+          include: {
+            variant: {
+              include: {
+                product: { select: { name: true, articleNumber: true } },
+                color: { select: { name: true } },
+                size: { select: { name: true } },
+                inventory: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      return ApiUtils.notFound('Order not found');
+    }
+
+    // Enrich items with available stock (admin only)
+    const enrichedItems = order.items.map((item) => {
+      const variant = item.variant;
+      const totalStock = variant?.inventory?.reduce((sum: number, inv: any) => sum + inv.onHand, 0) || 0;
+      const totalReserved = variant?.inventory?.reduce((sum: number, inv: any) => sum + inv.reserved, 0) || 0;
+      const availableStock = totalStock - totalReserved;
+
+      return {
+        ...item,
+        availableStock,
+      };
+    });
+
+    return ApiUtils.success({
+      ...order,
+      items: enrichedItems,
+    });
+  } catch (error: any) {
+    console.error('Error fetching order for review:', error);
+    return ApiUtils.error(error.message || 'Failed to fetch order');
+  }
+}
+
 // Admin reviews order: update quantities, set hold days, send to customer
 export async function PUT(
   request: NextRequest,
