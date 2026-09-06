@@ -15,6 +15,9 @@ export default function WholesaleCatalogPage() {
   const [submittingProduct, setSubmittingProduct] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // Per-product image carousel index: { [productId]: currentIndex }
+  const [imageIndices, setImageIndices] = useState<{ [productId: string]: number }>({});
+
   // Image preview modal
   const [previewImages, setPreviewImages] = useState<any[]>([]);
   const [previewColor, setPreviewColor] = useState('');
@@ -45,6 +48,9 @@ export default function WholesaleCatalogPage() {
   const getSelection = (productId: string) => selections[productId] || { color: '', size: '', qty: 0 };
 
   const setSelection = (productId: string, update: Partial<{ color: string; size: string; qty: number }>) => {
+    if (update.color !== undefined) {
+      setImageIndices((prev) => ({ ...prev, [productId]: 0 }));
+    }
     setSelections((prev) => {
       const current = prev[productId] || { color: '', size: '', qty: 0 };
       return { ...prev, [productId]: { ...current, ...update } };
@@ -77,6 +83,29 @@ export default function WholesaleCatalogPage() {
 
   const getColorImage = (product: any, colorName: string) => {
     return product.images?.find((img: any) => img.color?.name === colorName);
+  };
+
+  const getColorImages = (product: any, colorName: string): any[] => {
+    if (!product.images?.length) return [];
+    if (colorName) {
+      const filtered = product.images.filter((img: any) => img.color?.name === colorName);
+      return filtered.length > 0 ? filtered : product.images;
+    }
+    return product.images;
+  };
+
+  const getImageIndex = (productId: string) => imageIndices[productId] || 0;
+
+  const setImageIndex = (productId: string, index: number) => {
+    setImageIndices((prev) => ({ ...prev, [productId]: index }));
+  };
+
+  const prevImage = (productId: string, total: number) => {
+    setImageIndex(productId, (getImageIndex(productId) - 1 + total) % total);
+  };
+
+  const nextImage = (productId: string, total: number) => {
+    setImageIndex(productId, (getImageIndex(productId) + 1) % total);
   };
 
   const handleAddToCart = async (product: any) => {
@@ -160,14 +189,14 @@ export default function WholesaleCatalogPage() {
             const sel = getSelection(product.id);
             const selectedColor = sel.color || colors[0]?.name || '';
             const sizes = getProductSizes(product, selectedColor);
-            const colorImage = getColorImage(product, selectedColor);
-            const primaryImage = product.images?.find((img: any) => img.isPrimary) || product.images?.[0];
-            const displayImage = colorImage || primaryImage;
+            const colorImages = getColorImages(product, selectedColor);
+            const currentIdx = Math.min(getImageIndex(product.id), Math.max(0, colorImages.length - 1));
+            const displayImage = colorImages[currentIdx] || product.images?.[0];
             const variant = sel.color && sel.size ? getVariant(product, sel.color, sel.size) : null;
 
             return (
               <div key={product.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col">
-                {/* Image */}
+                {/* Image Carousel */}
                 <div className="relative aspect-[4/5] bg-slate-100 overflow-hidden group">
                   {displayImage ? (
                     <img
@@ -180,9 +209,42 @@ export default function WholesaleCatalogPage() {
                       <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                     </div>
                   )}
-                  <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-xs font-bold text-indigo-700 px-2.5 py-1 rounded-full">
+
+                  {/* Article badge */}
+                  <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-xs font-bold text-indigo-700 px-2.5 py-1 rounded-full z-10">
                     {product.articleNumber}
                   </div>
+
+                  {/* Prev / Next arrows */}
+                  {colorImages.length > 1 && (
+                    <>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); prevImage(product.id, colorImages.length); }}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-1.5 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                      >
+                        <ChevronLeft className="w-4 h-4 text-slate-700" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); nextImage(product.id, colorImages.length); }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-1.5 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                      >
+                        <ChevronRight className="w-4 h-4 text-slate-700" />
+                      </button>
+                    </>
+                  )}
+
+                  {/* Dot indicators */}
+                  {colorImages.length > 1 && (
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center space-x-1.5 z-10">
+                      {colorImages.map((_: any, idx: number) => (
+                        <button
+                          key={idx}
+                          onClick={(e) => { e.stopPropagation(); setImageIndex(product.id, idx); }}
+                          className={`w-2 h-2 rounded-full transition-all duration-200 ${idx === currentIdx ? 'bg-white w-4' : 'bg-white/50 hover:bg-white/80'}`}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Content */}
