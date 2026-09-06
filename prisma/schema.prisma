@@ -204,14 +204,16 @@ model Size {
 }
 
 model ProductVariant {
-  id        String   @id @default(uuid())
-  productId String
-  colorId   String
-  sizeId    String
-  sku       String   @unique
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                     String    @id @default(uuid())
+  productId              String
+  colorId                String
+  sizeId                 String
+  sku                    String    @unique
+  active                 Boolean   @default(true)
+  inProduction           Boolean   @default(false)
+  estimatedAvailability  DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
   product   Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
   color     Color        @relation(fields: [colorId], references: [id])

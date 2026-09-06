@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Save, ArrowLeft, Upload, X, Plus, Trash2, Image as ImageIcon, FolderOpen, AlertCircle, CheckCircle } from 'lucide-react';
+import { Save, ArrowLeft, Upload, X, Plus, Trash2, Image as ImageIcon, FolderOpen, AlertCircle, CheckCircle, Factory, Calendar } from 'lucide-react';
 import Link from 'next/link';
 
 const MAX_PIXELS = 5 * 1024 * 1024; // 5 megapixels
@@ -525,6 +525,8 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                       <th className="pb-3 font-medium">SKU</th>
                       <th className="pb-3 font-medium">Color</th>
                       <th className="pb-3 font-medium">Size</th>
+                      <th className="pb-3 font-medium text-center">Status</th>
+                      <th className="pb-3 font-medium text-center">Est. Availability</th>
                       <th className="pb-3 font-medium text-right">Stock</th>
                       <th className="pb-3 font-medium text-right">Reserved</th>
                       <th className="pb-3 font-medium text-right">Available</th>
@@ -547,6 +549,23 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                             </div>
                           </td>
                           <td className="py-3 text-slate-300">{variant.size?.name}</td>
+                          <td className="py-3 text-center">
+                            {variant.inProduction ? (
+                              <span className="bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center space-x-1">
+                                <Factory className="w-3 h-3" />
+                                <span>In Production</span>
+                              </span>
+                            ) : stock <= 10 ? (
+                              <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full">Low Stock</span>
+                            ) : (
+                              <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full">In Stock</span>
+                            )}
+                          </td>
+                          <td className="py-3 text-center text-slate-400 text-[11px]">
+                            {variant.estimatedAvailability
+                              ? new Date(variant.estimatedAvailability).toLocaleDateString()
+                              : '—'}
+                          </td>
                           <td className="py-3 text-right text-slate-300">{stock}</td>
                           <td className="py-3 text-right text-amber-400">{reserved}</td>
                           <td className="py-3 text-right text-emerald-400">{stock - reserved}</td>

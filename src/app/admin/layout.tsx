@@ -15,6 +15,7 @@ import {
   Tags,
   UserCog,
   UserPlus,
+  Box,
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -52,6 +53,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const navItems = [
     { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['MASTER_ADMIN', 'ADMIN', 'USER'] },
     { href: '/admin/products', label: 'Products', icon: Tags, roles: ['MASTER_ADMIN', 'ADMIN', 'USER'] },
+    { href: '/admin/stock', label: 'New Stock', icon: Box, roles: ['MASTER_ADMIN'] },
     { href: '/admin/orders', label: 'Order Processing', icon: Package, roles: ['MASTER_ADMIN', 'ADMIN'] },
     { href: '/admin/tiers', label: 'Pricing Tiers', icon: Sliders, roles: ['MASTER_ADMIN', 'ADMIN'] },
     { href: '/admin/payments', label: 'Record Payments', icon: CreditCard, roles: ['MASTER_ADMIN', 'ADMIN'] },
