@@ -317,12 +317,12 @@ export default function CustomerOrdersPage() {
                     <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-2">
                       <div className="flex justify-between text-xs text-slate-500">
                         <span>Subtotal</span>
-                        <span>Rs.{order.subtotal.toFixed(2)}</span>
+                        <span>Rs.{(order.grossSubtotal || 0).toFixed(2)}</span>
                       </div>
-                      {order.totalDiscount > 0 && (
+                      {(order.discountTotal || 0) > 0 && (
                         <div className="flex justify-between text-xs text-emerald-600">
                           <span>Tier Discount ({order.discountPercentSnapshot}%)</span>
-                          <span>-Rs.{order.totalDiscount.toFixed(2)}</span>
+                          <span>-Rs.{order.discountTotal.toFixed(2)}</span>
                         </div>
                       )}
                       <div className="flex justify-between text-sm font-bold text-slate-900 border-t border-slate-200 pt-2">
