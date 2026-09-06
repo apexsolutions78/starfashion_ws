@@ -39,20 +39,17 @@ body {
 
 /* Print styles for A4 dispatch documents */
 @media print {
-  body * {
-    visibility: hidden;
+  body > *:not(#print-area) {
+    display: none !important;
   }
 
-  .print\\:block,
-  .print\\:block * {
-    visibility: visible;
-  }
-
-  .print\\:block {
-    position: absolute;
+  #print-area {
+    display: block !important;
+    position: fixed;
     left: 0;
     top: 0;
     width: 100%;
+    background: white;
   }
 
   @page {

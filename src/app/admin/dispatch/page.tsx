@@ -62,7 +62,16 @@ export default function AdminDispatchPage() {
   const handlePrint = (order: any) => {
     setSelectedOrder(order);
     setTimeout(() => {
+      const printArea = document.getElementById('print-area');
+      if (printArea) {
+        printArea.style.display = 'block';
+      }
       window.print();
+      setTimeout(() => {
+        if (printArea) {
+          printArea.style.display = 'none';
+        }
+      }, 500);
     }, 300);
   };
 
@@ -237,7 +246,7 @@ export default function AdminDispatchPage() {
 
       {/* Printable dispatch document */}
       {selectedOrder && (
-        <div ref={printRef} className="hidden print:block">
+        <div id="print-area" className="hidden" ref={printRef}>
           <DispatchDocument order={selectedOrder} />
         </div>
       )}
@@ -249,45 +258,45 @@ function DispatchDocument({ order }: { order: any }) {
   const shippingAddr = order.customer?.addresses?.find((a: any) => a.type === 'SHIPPING');
 
   return (
-    <div className="p-8 text-black text-sm" style={{ fontFamily: 'Arial, sans-serif' }}>
+    <div style={{ padding: '32px', color: '#000', fontSize: '14px', fontFamily: 'Arial, sans-serif', background: '#fff' }}>
       {/* Header */}
-      <div className="flex justify-between items-start border-b-2 border-black pb-4 mb-6">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #000', paddingBottom: '16px', marginBottom: '24px' }}>
         <div>
-          <img src="/logo.png" alt="StarFashion" className="h-12 mb-2" style={{ filter: 'grayscale(1)' }} />
-          <div className="text-xs text-gray-600">StarFashion Wholesale</div>
+          <img src="/logo.png" alt="StarFashion" style={{ height: '48px', marginBottom: '8px', filter: 'grayscale(1)' }} />
+          <div style={{ fontSize: '12px', color: '#666' }}>StarFashion Wholesale</div>
         </div>
-        <div className="text-right">
-          <div className="text-2xl font-bold tracking-tight">DISPATCH NOTE</div>
-          <div className="text-xs text-gray-600 mt-1">Date: {new Date().toLocaleDateString()}</div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '24px', fontWeight: 'bold', letterSpacing: 'tight' }}>DISPATCH NOTE</div>
+          <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>Date: {new Date().toLocaleDateString()}</div>
         </div>
       </div>
 
       {/* Order Info */}
-      <div className="grid grid-cols-2 gap-6 mb-6">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
         <div>
-          <div className="font-bold text-xs text-gray-500 uppercase mb-1">Order Number</div>
-          <div className="text-lg font-bold">{order.orderNumber}</div>
+          <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#666', textTransform: 'uppercase', marginBottom: '4px' }}>Order Number</div>
+          <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{order.orderNumber}</div>
         </div>
-        <div className="text-right">
-          <div className="font-bold text-xs text-gray-500 uppercase mb-1">Status</div>
-          <div className="inline-block bg-black text-white text-xs font-bold px-3 py-1 rounded">DISPATCHED</div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#666', textTransform: 'uppercase', marginBottom: '4px' }}>Status</div>
+          <div style={{ display: 'inline-block', background: '#000', color: '#fff', fontSize: '12px', fontWeight: 'bold', padding: '4px 12px', borderRadius: '4px' }}>DISPATCHED</div>
         </div>
       </div>
 
       {/* Customer & Shipping */}
-      <div className="grid grid-cols-2 gap-6 mb-6 border border-gray-300 rounded p-4">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px', border: '1px solid #ccc', borderRadius: '8px', padding: '16px' }}>
         <div>
-          <div className="font-bold text-xs text-gray-500 uppercase mb-2">Bill To</div>
-          <div className="font-bold">{order.customer?.companyName}</div>
+          <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#666', textTransform: 'uppercase', marginBottom: '8px' }}>Bill To</div>
+          <div style={{ fontWeight: 'bold' }}>{order.customer?.companyName}</div>
           <div>{order.customer?.contactName}</div>
           <div>{order.customer?.phone}</div>
           <div>{order.customer?.city}, {order.customer?.country}</div>
         </div>
         <div>
-          <div className="font-bold text-xs text-gray-500 uppercase mb-2">Ship To</div>
+          <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#666', textTransform: 'uppercase', marginBottom: '8px' }}>Ship To</div>
           {shippingAddr ? (
             <>
-              <div className="font-bold">{shippingAddr.contactName}</div>
+              <div style={{ fontWeight: 'bold' }}>{shippingAddr.contactName}</div>
               <div>{shippingAddr.addressLine1}</div>
               {shippingAddr.addressLine2 && <div>{shippingAddr.addressLine2}</div>}
               <div>{shippingAddr.city}, {shippingAddr.state || ''} {shippingAddr.postalCode}</div>
@@ -295,62 +304,62 @@ function DispatchDocument({ order }: { order: any }) {
               {shippingAddr.contactPhone && <div>Phone: {shippingAddr.contactPhone}</div>}
             </>
           ) : (
-            <div className="text-gray-400 italic">No shipping address on file</div>
+            <div style={{ color: '#999', fontStyle: 'italic' }}>No shipping address on file</div>
           )}
         </div>
       </div>
 
       {/* Items Table */}
-      <table className="w-full border-collapse border border-gray-300 mb-6">
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '24px' }}>
         <thead>
-          <tr className="bg-gray-100">
-            <th className="border border-gray-300 px-3 py-2 text-left text-xs font-bold">#</th>
-            <th className="border border-gray-300 px-3 py-2 text-left text-xs font-bold">SKU</th>
-            <th className="border border-gray-300 px-3 py-2 text-left text-xs font-bold">Product</th>
-            <th className="border border-gray-300 px-3 py-2 text-left text-xs font-bold">Color / Size</th>
-            <th className="border border-gray-300 px-3 py-2 text-center text-xs font-bold">Qty</th>
+          <tr style={{ background: '#f3f4f6' }}>
+            <th style={{ border: '1px solid #ccc', padding: '8px 12px', textAlign: 'left', fontSize: '12px', fontWeight: 'bold' }}>#</th>
+            <th style={{ border: '1px solid #ccc', padding: '8px 12px', textAlign: 'left', fontSize: '12px', fontWeight: 'bold' }}>SKU</th>
+            <th style={{ border: '1px solid #ccc', padding: '8px 12px', textAlign: 'left', fontSize: '12px', fontWeight: 'bold' }}>Product</th>
+            <th style={{ border: '1px solid #ccc', padding: '8px 12px', textAlign: 'left', fontSize: '12px', fontWeight: 'bold' }}>Color / Size</th>
+            <th style={{ border: '1px solid #ccc', padding: '8px 12px', textAlign: 'center', fontSize: '12px', fontWeight: 'bold' }}>Qty</th>
           </tr>
         </thead>
         <tbody>
           {order.items?.map((item: any, idx: number) => (
             <tr key={item.id}>
-              <td className="border border-gray-300 px-3 py-2 text-center">{idx + 1}</td>
-              <td className="border border-gray-300 px-3 py-2 font-mono text-xs">{item.skuSnapshot}</td>
-              <td className="border border-gray-300 px-3 py-2">{item.productNameSnapshot}</td>
-              <td className="border border-gray-300 px-3 py-2">{item.colorSnapshot} / {item.sizeSnapshot}</td>
-              <td className="border border-gray-300 px-3 py-2 text-center font-bold">{item.quantity}</td>
+              <td style={{ border: '1px solid #ccc', padding: '8px 12px', textAlign: 'center' }}>{idx + 1}</td>
+              <td style={{ border: '1px solid #ccc', padding: '8px 12px', fontFamily: 'monospace', fontSize: '12px' }}>{item.skuSnapshot}</td>
+              <td style={{ border: '1px solid #ccc', padding: '8px 12px' }}>{item.productNameSnapshot}</td>
+              <td style={{ border: '1px solid #ccc', padding: '8px 12px' }}>{item.colorSnapshot} / {item.sizeSnapshot}</td>
+              <td style={{ border: '1px solid #ccc', padding: '8px 12px', textAlign: 'center', fontWeight: 'bold' }}>{item.quantity}</td>
             </tr>
           ))}
         </tbody>
         <tfoot>
-          <tr className="bg-gray-50">
-            <td colSpan={4} className="border border-gray-300 px-3 py-2 text-right font-bold text-xs">Total Units</td>
-            <td className="border border-gray-300 px-3 py-2 text-center font-bold">{order.qualifyingQty}</td>
+          <tr style={{ background: '#f9fafb' }}>
+            <td colSpan={4} style={{ border: '1px solid #ccc', padding: '8px 12px', textAlign: 'right', fontWeight: 'bold', fontSize: '12px' }}>Total Units</td>
+            <td style={{ border: '1px solid #ccc', padding: '8px 12px', textAlign: 'center', fontWeight: 'bold' }}>{order.qualifyingQty}</td>
           </tr>
         </tfoot>
       </table>
 
       {/* Notes */}
       {order.adminNotes && (
-        <div className="border border-gray-300 rounded p-3 mb-6">
-          <div className="font-bold text-xs text-gray-500 uppercase mb-1">Admin Notes</div>
-          <div className="text-xs">{order.adminNotes}</div>
+        <div style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '12px', marginBottom: '24px' }}>
+          <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#666', textTransform: 'uppercase', marginBottom: '4px' }}>Admin Notes</div>
+          <div style={{ fontSize: '12px' }}>{order.adminNotes}</div>
         </div>
       )}
 
       {/* Footer */}
-      <div className="border-t-2 border-black pt-4 mt-8 text-xs text-gray-500 flex justify-between">
+      <div style={{ borderTop: '2px solid #000', paddingTop: '16px', marginTop: '32px', fontSize: '12px', color: '#666', display: 'flex', justifyContent: 'space-between' }}>
         <div>StarFashion Wholesale — Dispatch Document</div>
         <div>Generated: {new Date().toLocaleString()}</div>
       </div>
 
       {/* Signatures */}
-      <div className="grid grid-cols-2 gap-12 mt-10">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px', marginTop: '40px' }}>
         <div>
-          <div className="border-t border-black mt-12 pt-2 text-xs text-center text-gray-500">Packed By</div>
+          <div style={{ borderTop: '1px solid #000', marginTop: '48px', paddingTop: '8px', fontSize: '12px', textAlign: 'center', color: '#666' }}>Packed By</div>
         </div>
         <div>
-          <div className="border-t border-black mt-12 pt-2 text-xs text-center text-gray-500">Received By</div>
+          <div style={{ borderTop: '1px solid #000', marginTop: '48px', paddingTop: '8px', fontSize: '12px', textAlign: 'center', color: '#666' }}>Received By</div>
         </div>
       </div>
     </div>
