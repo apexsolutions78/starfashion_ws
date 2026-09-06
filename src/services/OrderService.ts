@@ -48,7 +48,14 @@ export class OrderService {
         throw new Error('Cart is empty');
       }
 
-      // 3. Prepare items for server pricing calculation & check inventory stock
+      // 3. Check minimum order quantity
+      const totalQuantity = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+      const minOrderQty = company.minOrderQty || 30;
+      if (totalQuantity < minOrderQty) {
+        throw new Error(`Minimum order quantity is ${minOrderQty} units. Your cart has ${totalQuantity} units.`);
+      }
+
+      // 4. Prepare items for server pricing calculation & check inventory stock
       const pricingInputs = [];
       for (const cartItem of cart.items) {
         const variant = cartItem.variant;

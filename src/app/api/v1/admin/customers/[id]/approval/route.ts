@@ -21,7 +21,7 @@ export async function POST(
 
     const { id } = await params;
     const body = await request.json();
-    const { creditLimit, paymentTermsId } = body;
+    const { creditLimit, paymentTermsId, minOrderQty } = body;
 
     // Find the company
     const company = await prisma.customerCompany.findUnique({
@@ -45,6 +45,7 @@ export async function POST(
       approvedAt: new Date(),
       approvedByUserId: session.userId,
       creditLimit: creditLimit || 0,
+      minOrderQty: minOrderQty || 30,
     };
     if (paymentTermsId) {
       const termExists = await prisma.paymentTerm.findUnique({ where: { id: paymentTermsId } });

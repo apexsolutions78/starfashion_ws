@@ -11,6 +11,7 @@ export default function AdminCustomersPage() {
   const [editingCustomer, setEditingCustomer] = useState<any>(null);
   const [editCreditLimit, setEditCreditLimit] = useState('');
   const [editPaymentTermsId, setEditPaymentTermsId] = useState('');
+  const [editMinOrderQty, setEditMinOrderQty] = useState('30');
   const [editStatus, setEditStatus] = useState('');
   const [saving, setSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -24,6 +25,7 @@ export default function AdminCustomersPage() {
   const [showApproveModal, setShowApproveModal] = useState<any>(null);
   const [approveCreditLimit, setApproveCreditLimit] = useState('0');
   const [approvePaymentTermsId, setApprovePaymentTermsId] = useState('term-due-on-order');
+  const [approveMinOrderQty, setApproveMinOrderQty] = useState('30');
 
   // Statement state
   const [showStatement, setShowStatement] = useState(false);
@@ -81,7 +83,11 @@ export default function AdminCustomersPage() {
       const res = await fetch(`/api/v1/admin/customers/${customerId}/approval`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ creditLimit: parseFloat(approveCreditLimit) || 0, paymentTermsId: approvePaymentTermsId }),
+        body: JSON.stringify({
+          creditLimit: parseFloat(approveCreditLimit) || 0,
+          paymentTermsId: approvePaymentTermsId,
+          minOrderQty: parseInt(approveMinOrderQty) || 30,
+        }),
       });
 
       const data = await res.json();
@@ -133,6 +139,7 @@ export default function AdminCustomersPage() {
     setEditingCustomer(customer);
     setEditCreditLimit(customer.creditLimit?.toString() || '0');
     setEditPaymentTermsId(customer.paymentTermsId || 'term-net-30');
+    setEditMinOrderQty(customer.minOrderQty?.toString() || '30');
     setEditStatus(customer.status || 'ACTIVE');
   };
 
@@ -149,6 +156,7 @@ export default function AdminCustomersPage() {
           id: editingCustomer.id,
           creditLimit: parseFloat(editCreditLimit) || 0,
           paymentTermsId: editPaymentTermsId,
+          minOrderQty: parseInt(editMinOrderQty) || 30,
           status: editStatus,
         }),
       });
@@ -342,7 +350,7 @@ export default function AdminCustomersPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 text-xs">
+            <div className="grid grid-cols-3 gap-4 text-xs">
               <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
                 <div className="text-slate-500 font-semibold mb-0.5">Credit Limit</div>
                 <div className="font-extrabold text-white text-sm">Rs.{c.creditLimit?.toFixed(2)}</div>
@@ -351,6 +359,11 @@ export default function AdminCustomersPage() {
               <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
                 <div className="text-slate-500 font-semibold mb-0.5">Payment Terms</div>
                 <div className="font-extrabold text-indigo-400 text-sm">{c.paymentTerms?.name || 'Net 30'}</div>
+              </div>
+
+              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                <div className="text-slate-500 font-semibold mb-0.5">Min Order Qty</div>
+                <div className="font-extrabold text-amber-400 text-sm">{c.minOrderQty || 30} units</div>
               </div>
             </div>
 
@@ -408,6 +421,19 @@ export default function AdminCustomersPage() {
                     <option key={term.id} value={term.id}>{term.name}</option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-2">Minimum Order Quantity (units)</label>
+                <input
+                  type="number"
+                  step="1"
+                  min="1"
+                  value={editMinOrderQty}
+                  onChange={(e) => setEditMinOrderQty(e.target.value)}
+                  className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-4 py-2 text-slate-100 text-sm focus:outline-none focus:border-emerald-500"
+                />
+                <p className="text-slate-400 text-[11px] mt-1">Customer cannot place orders below this quantity.</p>
               </div>
 
               <div>
@@ -494,6 +520,19 @@ export default function AdminCustomersPage() {
                 {parseFloat(approveCreditLimit) > 0 && (
                   <p className="text-emerald-400 text-[11px] mt-1">Customer can order up to Rs.{parseFloat(approveCreditLimit).toFixed(2)} on credit</p>
                 )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-2">Minimum Order Quantity (units)</label>
+                <input
+                  type="number"
+                  step="1"
+                  min="1"
+                  value={approveMinOrderQty}
+                  onChange={(e) => setApproveMinOrderQty(e.target.value)}
+                  className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-4 py-2 text-slate-100 text-sm focus:outline-none focus:border-emerald-500"
+                />
+                <p className="text-slate-400 text-[11px] mt-1">Default: 30 units (Tier 1 minimum). Customer cannot place orders below this quantity.</p>
               </div>
             </div>
 

@@ -145,6 +145,9 @@ export default function CartPage() {
   const quote = cartData?.quote;
   const lineItems = quote?.lineItems || [];
   const totalAmount = quote?.netSubtotal || 0;
+  const minOrderQty = customerInfo?.minOrderQty || 30;
+  const totalCartQty = quote?.qualifyingQty || 0;
+  const meetsMinimumOrder = totalCartQty >= minOrderQty;
 
   // Payment Success View
   if (paymentSuccess) {
@@ -422,6 +425,19 @@ export default function CartPage() {
                 )}
               </div>
 
+              {/* Minimum Order Quantity Warning */}
+              {!meetsMinimumOrder && (
+                <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3.5 text-xs space-y-1">
+                  <div className="flex items-center space-x-2 text-red-400 font-bold">
+                    <ShieldAlert className="w-4 h-4" />
+                    <span>Minimum Order: {minOrderQty} units required</span>
+                  </div>
+                  <p className="text-red-300/80 text-[11px]">
+                    Your cart has {totalCartQty} units. Add {minOrderQty - totalCartQty} more units to meet the minimum order requirement.
+                  </p>
+                </div>
+              )}
+
               {/* Payment Terms Warning */}
               {requiresFullPayment && (
                 <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3.5 text-xs space-y-1">
@@ -446,14 +462,18 @@ export default function CartPage() {
 
               <button
                 onClick={handleSubmitOrder}
-                disabled={submitting}
+                disabled={submitting || !meetsMinimumOrder}
                 className={`w-full font-bold text-sm py-3.5 rounded-xl transition-all shadow-lg flex items-center justify-center space-x-2 disabled:opacity-50 ${
                   requiresFullPayment
                     ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-600/30'
                     : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30'
                 }`}
               >
-                <span>{submitting ? 'Submitting Order...' : requiresFullPayment ? 'Pay & Submit Order' : 'Submit Wholesale Order'}</span>
+                <span>
+                  {submitting ? 'Submitting Order...' :
+                   !meetsMinimumOrder ? `Add ${minOrderQty - totalCartQty} more units` :
+                   requiresFullPayment ? 'Pay & Submit Order' : 'Submit Wholesale Order'}
+                </span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>

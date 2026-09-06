@@ -50,6 +50,7 @@ model CustomerCompany {
   registrationNumber String?
   creditLimit        Float    @default(0.0)
   paymentTermsId     String?
+  minOrderQty        Int      @default(30) // Minimum order quantity (default: 30 per Tier 1)
   status             String   @default("ACTIVE") // "ACTIVE" | "SUSPENDED" | "ARCHIVED"
   onboardingStatus   String   @default("APPROVED") // "PENDING_APPROVAL" | "APPROVED" | "REJECTED"
   rejectionReason    String?

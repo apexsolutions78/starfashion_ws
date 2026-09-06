@@ -76,3 +76,51 @@ export async function POST(req: NextRequest) {
     return ApiUtils.error(error.message || 'Failed to create customer', 500);
   }
 }
+
+export async function PUT(req: NextRequest) {
+  const session = await getAuthSession(req);
+  if (!session || session.userType !== 'ADMIN') {
+    return ApiUtils.forbidden('Admin authorization required');
+  }
+
+  try {
+    const body = await req.json();
+    const { id, creditLimit, paymentTermsId, minOrderQty, status } = body;
+
+    if (!id) {
+      return ApiUtils.error('Customer ID is required', 400);
+    }
+
+    const updateData: any = {};
+    if (creditLimit !== undefined) updateData.creditLimit = parseFloat(creditLimit) || 0;
+    if (minOrderQty !== undefined) updateData.minOrderQty = parseInt(minOrderQty) || 30;
+    if (status !== undefined) updateData.status = status;
+    if (paymentTermsId !== undefined) {
+      const termExists = await prisma.paymentTerm.findUnique({ where: { id: paymentTermsId } });
+      if (termExists) {
+        updateData.paymentTermsId = paymentTermsId;
+      }
+    }
+
+    const customer = await prisma.customerCompany.update({
+      where: { id },
+      data: updateData,
+    });
+
+    // Audit Log
+    await prisma.auditLog.create({
+      data: {
+        actorId: session.userId,
+        actorEmail: session.email,
+        action: 'CUSTOMER_COMPANY_UPDATED',
+        entityType: 'CustomerCompany',
+        entityId: id,
+        afterJson: JSON.stringify(updateData),
+      },
+    });
+
+    return ApiUtils.success(customer, 'Customer updated successfully');
+  } catch (error: any) {
+    return ApiUtils.error(error.message || 'Failed to update customer', 500);
+  }
+}
