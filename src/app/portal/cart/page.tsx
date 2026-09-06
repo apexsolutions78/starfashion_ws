@@ -222,85 +222,89 @@ export default function CartPage() {
           <p className="text-slate-400 text-xs mt-1">Browse the catalogue and add items to generate a wholesale quote.</p>
         </div>
       ) : (
-        <>
-          {/* Desktop Table View */}
-          <div className="hidden md:block bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 uppercase font-semibold text-[11px]">
-                  <th className="text-left py-3 px-4">Article / Variant</th>
-                  <th className="text-center py-3 px-4">Base Price</th>
-                  <th className="text-center py-3 px-4">Qty</th>
-                  <th className="text-right py-3 px-4">Line Gross</th>
-                  <th className="text-right py-3 px-4">Discount</th>
-                  <th className="text-right py-3 px-4">Line Net</th>
-                  <th className="py-3 px-4"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {lineItems.map((item: any) => (
-                  <tr key={item.variantId} className="hover:bg-slate-50/80">
-                    <td className="py-3 px-4">
-                      <div className="font-semibold text-slate-900">{item.productName}</div>
-                      <div className="text-[11px] text-slate-400">SKU: {item.sku} | Color: {item.colorName} | Size: {item.sizeName}</div>
-                    </td>
-                    <td className="py-3 px-4 text-center text-slate-600">Rs.{item.baseUnitPrice.toFixed(2)}</td>
-                    <td className="py-3 px-4 text-center font-bold text-slate-900">{item.quantity}</td>
-                    <td className="py-3 px-4 text-right text-slate-500">Rs.{item.lineGross.toFixed(2)}</td>
-                    <td className="py-3 px-4 text-right text-emerald-600 font-semibold">{item.lineDiscount > 0 ? `-Rs.${item.lineDiscount.toFixed(2)}` : 'Rs.0.00'}</td>
-                    <td className="py-3 px-4 text-right font-bold text-slate-900">Rs.{item.lineNet.toFixed(2)}</td>
-                    <td className="py-3 px-4 text-center">
-                      <button onClick={() => handleRemoveItem(item.variantId)} className="text-slate-400 hover:text-red-500 transition-colors" title="Remove"><Trash2 className="w-4 h-4" /></button>
-                    </td>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Items Section */}
+          <div className="lg:col-span-2 space-y-4">
+            {/* Desktop Table View */}
+            <div className="hidden md:block bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 uppercase font-semibold text-[11px]">
+                    <th className="text-left py-3 px-4">Article / Variant</th>
+                    <th className="text-center py-3 px-4">Base Price</th>
+                    <th className="text-center py-3 px-4">Qty</th>
+                    <th className="text-right py-3 px-4">Line Gross</th>
+                    <th className="text-right py-3 px-4">Discount</th>
+                    <th className="text-right py-3 px-4">Line Net</th>
+                    <th className="py-3 px-4"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {lineItems.map((item: any) => (
+                    <tr key={item.variantId} className="hover:bg-slate-50/80">
+                      <td className="py-3 px-4">
+                        <div className="font-semibold text-slate-900">{item.productName}</div>
+                        <div className="text-[11px] text-slate-400">SKU: {item.sku} | Color: {item.colorName} | Size: {item.sizeName}</div>
+                      </td>
+                      <td className="py-3 px-4 text-center text-slate-600">Rs.{item.baseUnitPrice.toFixed(2)}</td>
+                      <td className="py-3 px-4 text-center font-bold text-slate-900">{item.quantity}</td>
+                      <td className="py-3 px-4 text-right text-slate-500">Rs.{item.lineGross.toFixed(2)}</td>
+                      <td className="py-3 px-4 text-right text-emerald-600 font-semibold">{item.lineDiscount > 0 ? `-Rs.${item.lineDiscount.toFixed(2)}` : 'Rs.0.00'}</td>
+                      <td className="py-3 px-4 text-right font-bold text-slate-900">Rs.{item.lineNet.toFixed(2)}</td>
+                      <td className="py-3 px-4 text-center">
+                        <button onClick={() => handleRemoveItem(item.variantId)} className="text-slate-400 hover:text-red-500 transition-colors" title="Remove"><Trash2 className="w-4 h-4" /></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+              {lineItems.map((item: any) => (
+                <div key={item.variantId} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-slate-900 text-sm truncate">{item.productName}</div>
+                      <div className="text-[11px] text-slate-400 mt-0.5">
+                        <span className="text-slate-500">SKU:</span> {item.sku}
+                      </div>
+                      <div className="text-[11px] text-slate-400">
+                        <span className="text-slate-500">Color:</span> {item.colorName} &middot; <span className="text-slate-500">Size:</span> {item.sizeName}
+                      </div>
+                    </div>
+                    <button onClick={() => handleRemoveItem(item.variantId)} className="text-slate-300 hover:text-red-500 p-1 -mt-1 -mr-1 transition-colors flex-shrink-0">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-slate-100 text-center">
+                    <div>
+                      <div className="text-[10px] text-slate-400 uppercase font-semibold mb-0.5">Unit Price</div>
+                      <div className="text-xs font-bold text-slate-700">Rs.{item.baseUnitPrice.toFixed(0)}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-slate-400 uppercase font-semibold mb-0.5">Qty</div>
+                      <div className="text-xs font-bold text-slate-900">{item.quantity}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-slate-400 uppercase font-semibold mb-0.5">Line Total</div>
+                      <div className="text-xs font-bold text-slate-900">Rs.{item.lineNet.toFixed(0)}</div>
+                    </div>
+                  </div>
+                  {item.lineDiscount > 0 && (
+                    <div className="text-[11px] text-emerald-600 font-semibold text-right mt-1">
+                      You save Rs.{item.lineDiscount.toFixed(2)}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Mobile Card View */}
-          <div className="md:hidden space-y-3">
-            {lineItems.map((item: any) => (
-              <div key={item.variantId} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="font-bold text-slate-900 text-sm truncate">{item.productName}</div>
-                    <div className="text-[11px] text-slate-400 mt-0.5">
-                      <span className="text-slate-500">SKU:</span> {item.sku}
-                    </div>
-                    <div className="text-[11px] text-slate-400">
-                      <span className="text-slate-500">Color:</span> {item.colorName} &middot; <span className="text-slate-500">Size:</span> {item.sizeName}
-                    </div>
-                  </div>
-                  <button onClick={() => handleRemoveItem(item.variantId)} className="text-slate-300 hover:text-red-500 p-1 -mt-1 -mr-1 transition-colors flex-shrink-0">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-                <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-slate-100 text-center">
-                  <div>
-                    <div className="text-[10px] text-slate-400 uppercase font-semibold mb-0.5">Unit Price</div>
-                    <div className="text-xs font-bold text-slate-700">Rs.{item.baseUnitPrice.toFixed(0)}</div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-slate-400 uppercase font-semibold mb-0.5">Qty</div>
-                    <div className="text-xs font-bold text-slate-900">{item.quantity}</div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-slate-400 uppercase font-semibold mb-0.5">Line Total</div>
-                    <div className="text-xs font-bold text-slate-900">Rs.{item.lineNet.toFixed(0)}</div>
-                  </div>
-                </div>
-                {item.lineDiscount > 0 && (
-                  <div className="text-[11px] text-emerald-600 font-semibold text-right mt-1">
-                    You save Rs.{item.lineDiscount.toFixed(2)}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Summary Sidebar - full width on mobile */}
-          <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-xl space-y-5">
+          {/* Pricing Quote & Tier Summary Sidebar */}
+          <div className="space-y-6">
+            <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-xl space-y-5">
             <h3 className="text-base font-bold tracking-tight border-b border-slate-800 pb-3">Order Quote Summary</h3>
             <div className="space-y-2 text-xs">
               <div className="flex justify-between text-slate-300">
@@ -376,8 +380,9 @@ export default function CartPage() {
               </span>
               <ArrowRight className="w-4 h-4" />
             </button>
+            </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
