@@ -31,7 +31,10 @@ export async function GET(req: NextRequest) {
   if (session.customerId) {
     customerCompany = await prisma.customerCompany.findUnique({
       where: { id: session.customerId },
-      include: { paymentTerms: true },
+      include: {
+        paymentTerms: true,
+        addresses: { orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }] },
+      },
     });
   }
 

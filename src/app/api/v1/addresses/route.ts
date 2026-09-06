@@ -42,8 +42,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { type, addressLine1, addressLine2, city, state, postalCode, country, contactName, contactPhone, isDefault } = body;
 
-    if (!addressLine1 || !city || !postalCode || !contactName) {
-      return ApiUtils.error('addressLine1, city, postalCode, and contactName are required');
+    if (!addressLine1 || !city || !contactName) {
+      return ApiUtils.error('addressLine1, city, and contactName are required');
     }
 
     // If setting as default, unset other defaults of same type
