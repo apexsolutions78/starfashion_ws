@@ -155,6 +155,43 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // If order is ACCEPTED and payment covers the balance, auto-confirm the order
+    if (order.status === 'ACCEPTED') {
+      const newExistingPayments = existingPayments + amount;
+      const newBalance = order.grandTotal - newExistingPayments;
+
+      // For "Due on Order" terms, full payment required; for others, any payment confirms
+      if (isDueOnOrder ? newBalance <= 0.01 : amount > 0) {
+        await prisma.order.update({
+          where: { id: orderId },
+          data: { status: 'CONFIRMED' },
+        });
+
+        // Notify customer
+        await prisma.customerNotification.create({
+          data: {
+            customerId,
+            title: 'Order Confirmed',
+            message: `Payment of Rs.${amount.toFixed(2)} received for order ${order.orderNumber}. Your order has been confirmed and will be processed shortly.`,
+            type: 'ORDER_UPDATE',
+            orderId,
+          },
+        });
+
+        // Notify admin
+        await prisma.auditLog.create({
+          data: {
+            actorId: session.userId,
+            actorEmail: session.email,
+            action: 'ORDER_CONFIRMED_BY_PAYMENT',
+            entityType: 'Order',
+            entityId: orderId,
+            afterJson: JSON.stringify({ status: 'CONFIRMED', paymentAmount: amount }),
+          },
+        });
+      }
+    }
+
     return ApiUtils.success(payment, 'Payment submitted successfully');
   } catch (error) {
     console.error('Error creating payment:', error);

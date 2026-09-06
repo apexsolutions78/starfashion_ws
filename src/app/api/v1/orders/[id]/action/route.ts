@@ -52,11 +52,11 @@ export async function PATCH(
     }
 
     if (action === 'ACCEPT') {
-      // Customer accepts - order moves to awaiting payment
+      // Customer accepts - order moves to ACCEPTED (awaiting payment)
       const updatedOrder = await prisma.order.update({
         where: { id },
         data: {
-          status: 'CONFIRMED',
+          status: 'ACCEPTED',
           customerReviewed: true,
         },
       });
@@ -65,8 +65,8 @@ export async function PATCH(
       await prisma.customerNotification.create({
         data: {
           customerId: order.customerId,
-          title: 'Order Accepted',
-          message: `Order ${order.orderNumber} has been accepted by the customer. Awaiting payment confirmation.`,
+          title: 'Order Accepted — Awaiting Payment',
+          message: `Order ${order.orderNumber} has been accepted by the customer. Awaiting payment to confirm the order.`,
           type: 'ORDER_UPDATE',
           orderId: id,
         },
@@ -79,11 +79,11 @@ export async function PATCH(
           action: 'ORDER_ACCEPTED_BY_CUSTOMER',
           entityType: 'Order',
           entityId: id,
-          afterJson: JSON.stringify({ status: 'CONFIRMED' }),
+          afterJson: JSON.stringify({ status: 'ACCEPTED' }),
         },
       });
 
-      return ApiUtils.success(updatedOrder, 'Order accepted. Please proceed with payment.');
+      return ApiUtils.success(updatedOrder, 'Order accepted. Please proceed with payment to confirm your order.');
     } else {
       // Customer cancels
       const updatedOrder = await prisma.order.update({

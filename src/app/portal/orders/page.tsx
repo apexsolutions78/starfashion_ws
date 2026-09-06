@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Package, Clock, CheckCircle, XCircle, ChevronDown, ChevronUp, AlertCircle, Bell } from 'lucide-react';
+import { Package, Clock, CheckCircle, XCircle, ChevronDown, ChevronUp, AlertCircle, Bell, CreditCard, Upload } from 'lucide-react';
 
 export default function CustomerOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -13,6 +13,14 @@ export default function CustomerOrdersPage() {
   const [confirmAcceptId, setConfirmAcceptId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [now, setNow] = useState(Date.now());
+
+  // Payment modal state
+  const [payOrder, setPayOrder] = useState<any>(null);
+  const [payAmount, setPayAmount] = useState('');
+  const [payMethod, setPayMethod] = useState('BANK_TRANSFER');
+  const [payRef, setPayRef] = useState('');
+  const [payScreenshot, setPayScreenshot] = useState<File | null>(null);
+  const [paying, setPaying] = useState(false);
 
   const fetchOrders = () => {
     fetch('/api/v1/orders')
@@ -87,6 +95,44 @@ export default function CustomerOrdersPage() {
     }
   };
 
+  const handlePayOrder = async () => {
+    if (!payOrder || !payAmount) return;
+    setPaying(true);
+    setMessage(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('orderId', payOrder.id);
+      formData.append('amount', payAmount);
+      formData.append('paymentMethod', payMethod);
+      if (payRef) formData.append('referenceNumber', payRef);
+      if (payScreenshot) formData.append('screenshot', payScreenshot);
+
+      const res = await fetch('/api/v1/payments', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to submit payment');
+      }
+
+      setMessage({ type: 'success', text: 'Payment submitted! Order confirmed.' });
+      setPayOrder(null);
+      setPayAmount('');
+      setPayRef('');
+      setPayScreenshot(null);
+      fetchOrders();
+      setTimeout(() => setMessage(null), 5000);
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message });
+      setTimeout(() => setMessage(null), 3000);
+    } finally {
+      setPaying(false);
+    }
+  };
+
   const getTimeRemaining = (holdExpiresAt: string) => {
     const diff = new Date(holdExpiresAt).getTime() - now;
     if (diff <= 0) return null;
@@ -105,6 +151,8 @@ export default function CustomerOrdersPage() {
         return <span className="bg-amber-100 text-amber-800 border border-amber-300 text-xs font-semibold px-2.5 py-0.5 rounded-full">Submitted</span>;
       case 'ON_HOLD':
         return <span className="bg-orange-100 text-orange-800 border border-orange-300 text-xs font-semibold px-2.5 py-0.5 rounded-full flex items-center space-x-1"><Clock className="w-3 h-3" /><span>On Hold</span></span>;
+      case 'ACCEPTED':
+        return <span className="bg-blue-100 text-blue-800 border border-blue-300 text-xs font-semibold px-2.5 py-0.5 rounded-full flex items-center space-x-1"><Clock className="w-3 h-3" /><span>Awaiting Payment</span></span>;
       case 'CONFIRMED':
         return <span className="bg-blue-100 text-blue-800 border border-blue-300 text-xs font-semibold px-2.5 py-0.5 rounded-full">Confirmed</span>;
       case 'PROCESSING':
@@ -150,6 +198,7 @@ export default function CustomerOrdersPage() {
             const isExpanded = expandedOrderId === order.id;
             const canCancel = order.status === 'SUBMITTED' || order.status === 'ON_HOLD';
             const isOnHold = order.status === 'ON_HOLD';
+            const isAccepted = order.status === 'ACCEPTED';
             const timeLeft = isOnHold && order.holdExpiresAt ? getTimeRemaining(order.holdExpiresAt) : null;
 
             return (
@@ -249,6 +298,16 @@ export default function CustomerOrdersPage() {
                       </div>
                     )}
 
+                    {isAccepted && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setPayOrder(order); setPayAmount(order.grandTotal.toFixed(2)); }}
+                        className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors flex items-center space-x-1"
+                      >
+                        <CreditCard className="w-4 h-4" />
+                        <span>Pay Now</span>
+                      </button>
+                    )}
+
                     <button onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}>
                       {isExpanded ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
                     </button>
@@ -341,6 +400,115 @@ export default function CustomerOrdersPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Payment Modal */}
+      {payOrder && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-5 border-b border-slate-200">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Make Payment</h2>
+                <p className="text-slate-500 text-xs mt-1">Order {payOrder.orderNumber}</p>
+              </div>
+              <button onClick={() => setPayOrder(null)} className="text-slate-400 hover:text-slate-600">
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div className="bg-slate-50 rounded-xl p-4">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Grand Total</span>
+                  <span className="font-bold text-slate-900">Rs.{payOrder.grandTotal.toFixed(2)}</span>
+                </div>
+                {payOrder.payments && payOrder.payments.length > 0 && (
+                  <>
+                    <div className="flex justify-between text-sm mt-1">
+                      <span className="text-slate-500">Already Paid</span>
+                      <span className="text-blue-600">-Rs.{payOrder.payments.reduce((s: number, p: any) => s + p.amount, 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm mt-1 pt-1 border-t border-slate-200">
+                      <span className="text-slate-500">Balance Due</span>
+                      <span className="font-bold text-red-600">Rs.{(payOrder.grandTotal - payOrder.payments.reduce((s: number, p: any) => s + p.amount, 0)).toFixed(2)}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Payment Amount (Rs.) *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={payAmount}
+                  onChange={(e) => setPayAmount(e.target.value)}
+                  className="w-full border border-slate-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Payment Method *</label>
+                <select
+                  value={payMethod}
+                  onChange={(e) => setPayMethod(e.target.value)}
+                  className="w-full border border-slate-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="BANK_TRANSFER">Bank Transfer</option>
+                  <option value="CHEQUE">Cheque</option>
+                  <option value="CASH">Cash</option>
+                  <option value="CREDIT_CARD">Credit Card</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Reference Number</label>
+                <input
+                  type="text"
+                  value={payRef}
+                  onChange={(e) => setPayRef(e.target.value)}
+                  className="w-full border border-slate-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                  placeholder="Transaction ID / Cheque #"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Deposit Screenshot</label>
+                <label className="flex items-center justify-center w-full border-2 border-dashed border-slate-300 rounded-lg p-4 cursor-pointer hover:border-indigo-400 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setPayScreenshot(e.target.files?.[0] || null)}
+                    className="hidden"
+                  />
+                  <div className="text-center">
+                    <Upload className="w-6 h-6 text-slate-400 mx-auto mb-1" />
+                    <span className="text-xs text-slate-500">{payScreenshot ? payScreenshot.name : 'Choose file'}</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div className="p-5 border-t border-slate-200 flex justify-end space-x-3">
+              <button
+                onClick={() => setPayOrder(null)}
+                className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePayOrder}
+                disabled={paying || !payAmount || parseFloat(payAmount) <= 0}
+                className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 disabled:opacity-50"
+              >
+                <CreditCard className="w-4 h-4" />
+                <span>{paying ? 'Processing...' : 'Submit Payment'}</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
