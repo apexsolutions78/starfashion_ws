@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShoppingBag, ShoppingCart, Package, FileText, LogOut, User, Building2, Tag, CreditCard } from 'lucide-react';
+import { ShoppingBag, ShoppingCart, Package, FileText, LogOut, User, Building2, Tag, CreditCard, MapPin } from 'lucide-react';
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -44,6 +44,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     { href: '/portal/catalog', label: 'Catalogue', icon: ShoppingBag },
     { href: '/portal/cart', label: 'Wholesale Cart', icon: ShoppingCart, count: cartQuote?.qualifyingQty || 0 },
     { href: '/portal/orders', label: 'Orders', icon: Package },
+    { href: '/portal/addresses', label: 'Addresses', icon: MapPin },
     { href: '/portal/payments', label: 'Payments', icon: CreditCard },
     { href: '/portal/statement', label: 'Account & Ledger', icon: FileText },
   ];

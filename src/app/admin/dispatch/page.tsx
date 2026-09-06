@@ -137,12 +137,6 @@ export default function AdminDispatchPage() {
     </tfoot>
   </table>
 
-  ${order.adminNotes ? `
-  <div style="border:1px solid #ccc;border-radius:8px;padding:12px;margin-bottom:24px">
-    <div style="font-weight:bold;font-size:12px;color:#666;text-transform:uppercase;margin-bottom:4px">Admin Notes</div>
-    <div style="font-size:12px">${order.adminNotes}</div>
-  </div>` : ''}
-
   <div style="border-top:2px solid #000;padding-top:16px;margin-top:32px;font-size:12px;color:#666;display:flex;justify-content:space-between">
     <div>StarFashion Wholesale — Dispatch Document</div>
     <div>Generated: ${new Date().toLocaleString()}</div>
