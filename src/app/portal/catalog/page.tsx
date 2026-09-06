@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Search, ShoppingCart, Check, X, ChevronLeft, ChevronRight, Minus, Plus } from 'lucide-react';
 
 export default function WholesaleCatalogPage() {
@@ -108,6 +108,23 @@ export default function WholesaleCatalogPage() {
     setImageIndex(productId, (getImageIndex(productId) + 1) % total);
   };
 
+  const touchStartRef = useRef<{ [productId: string]: number }>({});
+
+  const handleTouchStart = (productId: string, e: React.TouchEvent) => {
+    touchStartRef.current[productId] = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (productId: string, total: number, e: React.TouchEvent) => {
+    const startX = touchStartRef.current[productId];
+    if (startX === undefined) return;
+    const diff = startX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) nextImage(productId, total);
+      else prevImage(productId, total);
+    }
+    delete touchStartRef.current[productId];
+  };
+
   const handleAddToCart = async (product: any) => {
     const sel = getSelection(product.id);
     if (!sel.color || !sel.size || sel.qty <= 0) return;
@@ -197,7 +214,11 @@ export default function WholesaleCatalogPage() {
             return (
               <div key={product.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col">
                 {/* Image Carousel */}
-                <div className="relative aspect-[4/5] bg-slate-100 overflow-hidden group">
+                <div
+                  className="relative aspect-[4/5] bg-slate-100 overflow-hidden group"
+                  onTouchStart={(e) => handleTouchStart(product.id, e)}
+                  onTouchEnd={(e) => handleTouchEnd(product.id, colorImages.length, e)}
+                >
                   {displayImage ? (
                     <img
                       src={displayImage.imagePath}
@@ -220,13 +241,13 @@ export default function WholesaleCatalogPage() {
                     <>
                       <button
                         onClick={(e) => { e.stopPropagation(); prevImage(product.id, colorImages.length); }}
-                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-1.5 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-1.5 shadow-lg md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10"
                       >
                         <ChevronLeft className="w-4 h-4 text-slate-700" />
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); nextImage(product.id, colorImages.length); }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-1.5 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-1.5 shadow-lg md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10"
                       >
                         <ChevronRight className="w-4 h-4 text-slate-700" />
                       </button>
@@ -235,12 +256,12 @@ export default function WholesaleCatalogPage() {
 
                   {/* Dot indicators */}
                   {colorImages.length > 1 && (
-                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center space-x-1.5 z-10">
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center space-x-2 bg-black/40 backdrop-blur-sm rounded-full px-3 py-1.5 z-10">
                       {colorImages.map((_: any, idx: number) => (
                         <button
                           key={idx}
                           onClick={(e) => { e.stopPropagation(); setImageIndex(product.id, idx); }}
-                          className={`w-2 h-2 rounded-full transition-all duration-200 ${idx === currentIdx ? 'bg-white w-4' : 'bg-white/50 hover:bg-white/80'}`}
+                          className={`rounded-full transition-all duration-200 ${idx === currentIdx ? 'bg-white w-2.5 h-2.5' : 'bg-white/60 w-2 h-2 hover:bg-white'}`}
                         />
                       ))}
                     </div>
