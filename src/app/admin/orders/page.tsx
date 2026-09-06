@@ -106,6 +106,7 @@ export default function AdminOrdersPage() {
       setShowReviewModal(false);
       setReviewOrder(null);
       fetchOrders();
+      window.dispatchEvent(new Event('refreshcounts'));
     } catch (err: any) {
       alert(err.message);
     } finally {
@@ -128,6 +129,7 @@ export default function AdminOrdersPage() {
       }
 
       fetchOrders();
+      window.dispatchEvent(new Event('refreshcounts'));
       if (selectedOrder?.id === orderId) {
         setSelectedOrder({ ...selectedOrder, status: newStatus });
       }

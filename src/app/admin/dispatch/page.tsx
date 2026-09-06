@@ -51,6 +51,7 @@ export default function AdminDispatchPage() {
       if (!res.ok || !data.success) throw new Error(data.error || 'Failed to dispatch');
       fetchOrders();
       setShowDetail(false);
+      window.dispatchEvent(new Event('refreshcounts'));
     } catch (err: any) {
       alert(err.message);
     } finally {

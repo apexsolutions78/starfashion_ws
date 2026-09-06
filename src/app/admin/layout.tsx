@@ -58,8 +58,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     };
 
     fetchCounts();
-    const interval = setInterval(fetchCounts, 30000);
-    return () => clearInterval(interval);
+    const interval = setInterval(fetchCounts, 10000);
+
+    // Listen for refresh events from other pages
+    const handleRefresh = () => fetchCounts();
+    window.addEventListener('refreshcounts', handleRefresh);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('refreshcounts', handleRefresh);
+    };
   }, []);
 
   const handleLogout = async () => {

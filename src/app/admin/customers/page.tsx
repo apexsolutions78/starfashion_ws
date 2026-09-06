@@ -96,6 +96,7 @@ export default function AdminCustomersPage() {
         fetchCustomers();
         fetchPendingCustomers();
         setShowApproveModal(null);
+        window.dispatchEvent(new Event('refreshcounts'));
         setTimeout(() => setSuccessMessage(null), 3000);
       } else {
         setErrorMessage(data.error || 'Failed to approve customer');
@@ -123,6 +124,7 @@ export default function AdminCustomersPage() {
         fetchPendingCustomers();
         setShowRejectModal(null);
         setRejectReason('');
+        window.dispatchEvent(new Event('refreshcounts'));
         setTimeout(() => setSuccessMessage(null), 3000);
       } else {
         setErrorMessage(data.error || 'Failed to reject customer');
