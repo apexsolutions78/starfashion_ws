@@ -36,24 +36,3 @@ body {
   color: #b45309;
   border: 1px solid #fde68a;
 }
-
-/* Print styles for A4 dispatch documents */
-@media print {
-  body > *:not(#print-area) {
-    display: none !important;
-  }
-
-  #print-area {
-    display: block !important;
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 100%;
-    background: white;
-  }
-
-  @page {
-    size: A4 portrait;
-    margin: 15mm;
-  }
-}

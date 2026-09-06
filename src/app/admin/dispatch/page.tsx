@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Truck, Printer, CheckCircle, Eye, X, MapPin, Phone, User, Package } from 'lucide-react';
 
 export default function AdminDispatchPage() {
@@ -9,7 +9,6 @@ export default function AdminDispatchPage() {
   const [dispatchingId, setDispatchingId] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [showDetail, setShowDetail] = useState(false);
-  const printRef = useRef<HTMLDivElement>(null);
 
   const fetchOrders = () => {
     setLoading(true);
@@ -60,19 +59,108 @@ export default function AdminDispatchPage() {
   };
 
   const handlePrint = (order: any) => {
-    setSelectedOrder(order);
-    setTimeout(() => {
-      const printArea = document.getElementById('print-area');
-      if (printArea) {
-        printArea.style.display = 'block';
-      }
-      window.print();
-      setTimeout(() => {
-        if (printArea) {
-          printArea.style.display = 'none';
-        }
-      }, 500);
-    }, 300);
+    const shippingAddr = order.customer?.addresses?.find((a: any) => a.type === 'SHIPPING');
+    const itemsHtml = order.items?.map((item: any, idx: number) => `
+      <tr>
+        <td style="border:1px solid #ccc;padding:8px 12px;text-align:center">${idx + 1}</td>
+        <td style="border:1px solid #ccc;padding:8px 12px;font-family:monospace;font-size:12px">${item.skuSnapshot}</td>
+        <td style="border:1px solid #ccc;padding:8px 12px">${item.productNameSnapshot}</td>
+        <td style="border:1px solid #ccc;padding:8px 12px">${item.colorSnapshot} / ${item.sizeSnapshot}</td>
+        <td style="border:1px solid #ccc;padding:8px 12px;text-align:center;font-weight:bold">${item.quantity}</td>
+      </tr>
+    `).join('') || '';
+
+    const shipToHtml = shippingAddr ? `
+      <div style="font-weight:bold">${shippingAddr.contactName}</div>
+      <div>${shippingAddr.addressLine1}</div>
+      ${shippingAddr.addressLine2 ? `<div>${shippingAddr.addressLine2}</div>` : ''}
+      <div>${shippingAddr.city}, ${shippingAddr.state || ''} ${shippingAddr.postalCode}</div>
+      <div>${shippingAddr.country}</div>
+      ${shippingAddr.contactPhone ? `<div>Phone: ${shippingAddr.contactPhone}</div>` : ''}
+    ` : '<div style="color:#999;font-style:italic">No shipping address on file</div>';
+
+    const html = `<!DOCTYPE html>
+<html><head><title>Dispatch Note - ${order.orderNumber}</title></head>
+<body style="margin:0;padding:32px;color:#000;font-size:14px;font-family:Arial,sans-serif;background:#fff">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #000;padding-bottom:16px;margin-bottom:24px">
+    <div>
+      <img src="${window.location.origin}/logo.png" style="height:48px;margin-bottom:8px;filter:grayscale(1)" />
+      <div style="font-size:12px;color:#666">StarFashion Wholesale</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:24px;font-weight:bold">DISPATCH NOTE</div>
+      <div style="font-size:12px;color:#666;margin-top:4px">Date: ${new Date().toLocaleDateString()}</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px">
+    <div>
+      <div style="font-weight:bold;font-size:12px;color:#666;text-transform:uppercase;margin-bottom:4px">Order Number</div>
+      <div style="font-size:18px;font-weight:bold">${order.orderNumber}</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-weight:bold;font-size:12px;color:#666;text-transform:uppercase;margin-bottom:4px">Status</div>
+      <div style="display:inline-block;background:#000;color:#fff;font-size:12px;font-weight:bold;padding:4px 12px;border-radius:4px">DISPATCHED</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;border:1px solid #ccc;border-radius:8px;padding:16px">
+    <div>
+      <div style="font-weight:bold;font-size:12px;color:#666;text-transform:uppercase;margin-bottom:8px">Bill To</div>
+      <div style="font-weight:bold">${order.customer?.companyName}</div>
+      <div>${order.customer?.contactName || ''}</div>
+      <div>${order.customer?.phone || ''}</div>
+      <div>${order.customer?.city || ''}, ${order.customer?.country || ''}</div>
+    </div>
+    <div>
+      <div style="font-weight:bold;font-size:12px;color:#666;text-transform:uppercase;margin-bottom:8px">Ship To</div>
+      ${shipToHtml}
+    </div>
+  </div>
+
+  <table style="width:100%;border-collapse:collapse;margin-bottom:24px">
+    <thead>
+      <tr style="background:#f3f4f6">
+        <th style="border:1px solid #ccc;padding:8px 12px;text-align:left;font-size:12px;font-weight:bold">#</th>
+        <th style="border:1px solid #ccc;padding:8px 12px;text-align:left;font-size:12px;font-weight:bold">SKU</th>
+        <th style="border:1px solid #ccc;padding:8px 12px;text-align:left;font-size:12px;font-weight:bold">Product</th>
+        <th style="border:1px solid #ccc;padding:8px 12px;text-align:left;font-size:12px;font-weight:bold">Color / Size</th>
+        <th style="border:1px solid #ccc;padding:8px 12px;text-align:center;font-size:12px;font-weight:bold">Qty</th>
+      </tr>
+    </thead>
+    <tbody>${itemsHtml}</tbody>
+    <tfoot>
+      <tr style="background:#f9fafb">
+        <td colspan="4" style="border:1px solid #ccc;padding:8px 12px;text-align:right;font-weight:bold;font-size:12px">Total Units</td>
+        <td style="border:1px solid #ccc;padding:8px 12px;text-align:center;font-weight:bold">${order.qualifyingQty}</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  ${order.adminNotes ? `
+  <div style="border:1px solid #ccc;border-radius:8px;padding:12px;margin-bottom:24px">
+    <div style="font-weight:bold;font-size:12px;color:#666;text-transform:uppercase;margin-bottom:4px">Admin Notes</div>
+    <div style="font-size:12px">${order.adminNotes}</div>
+  </div>` : ''}
+
+  <div style="border-top:2px solid #000;padding-top:16px;margin-top:32px;font-size:12px;color:#666;display:flex;justify-content:space-between">
+    <div>StarFashion Wholesale — Dispatch Document</div>
+    <div>Generated: ${new Date().toLocaleString()}</div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;margin-top:40px">
+    <div><div style="border-top:1px solid #000;margin-top:48px;padding-top:8px;font-size:12px;text-align:center;color:#666">Packed By</div></div>
+    <div><div style="border-top:1px solid #000;margin-top:48px;padding-top:8px;font-size:12px;text-align:center;color:#666">Received By</div></div>
+  </div>
+</body></html>`;
+
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (printWindow) {
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+    }
   };
 
   if (loading) {
@@ -244,124 +332,6 @@ export default function AdminDispatchPage() {
         )}
       </div>
 
-      {/* Printable dispatch document */}
-      {selectedOrder && (
-        <div id="print-area" className="hidden" ref={printRef}>
-          <DispatchDocument order={selectedOrder} />
-        </div>
-      )}
     </>
-  );
-}
-
-function DispatchDocument({ order }: { order: any }) {
-  const shippingAddr = order.customer?.addresses?.find((a: any) => a.type === 'SHIPPING');
-
-  return (
-    <div style={{ padding: '32px', color: '#000', fontSize: '14px', fontFamily: 'Arial, sans-serif', background: '#fff' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #000', paddingBottom: '16px', marginBottom: '24px' }}>
-        <div>
-          <img src="/logo.png" alt="StarFashion" style={{ height: '48px', marginBottom: '8px', filter: 'grayscale(1)' }} />
-          <div style={{ fontSize: '12px', color: '#666' }}>StarFashion Wholesale</div>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', letterSpacing: 'tight' }}>DISPATCH NOTE</div>
-          <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>Date: {new Date().toLocaleDateString()}</div>
-        </div>
-      </div>
-
-      {/* Order Info */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
-        <div>
-          <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#666', textTransform: 'uppercase', marginBottom: '4px' }}>Order Number</div>
-          <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{order.orderNumber}</div>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#666', textTransform: 'uppercase', marginBottom: '4px' }}>Status</div>
-          <div style={{ display: 'inline-block', background: '#000', color: '#fff', fontSize: '12px', fontWeight: 'bold', padding: '4px 12px', borderRadius: '4px' }}>DISPATCHED</div>
-        </div>
-      </div>
-
-      {/* Customer & Shipping */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px', border: '1px solid #ccc', borderRadius: '8px', padding: '16px' }}>
-        <div>
-          <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#666', textTransform: 'uppercase', marginBottom: '8px' }}>Bill To</div>
-          <div style={{ fontWeight: 'bold' }}>{order.customer?.companyName}</div>
-          <div>{order.customer?.contactName}</div>
-          <div>{order.customer?.phone}</div>
-          <div>{order.customer?.city}, {order.customer?.country}</div>
-        </div>
-        <div>
-          <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#666', textTransform: 'uppercase', marginBottom: '8px' }}>Ship To</div>
-          {shippingAddr ? (
-            <>
-              <div style={{ fontWeight: 'bold' }}>{shippingAddr.contactName}</div>
-              <div>{shippingAddr.addressLine1}</div>
-              {shippingAddr.addressLine2 && <div>{shippingAddr.addressLine2}</div>}
-              <div>{shippingAddr.city}, {shippingAddr.state || ''} {shippingAddr.postalCode}</div>
-              <div>{shippingAddr.country}</div>
-              {shippingAddr.contactPhone && <div>Phone: {shippingAddr.contactPhone}</div>}
-            </>
-          ) : (
-            <div style={{ color: '#999', fontStyle: 'italic' }}>No shipping address on file</div>
-          )}
-        </div>
-      </div>
-
-      {/* Items Table */}
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '24px' }}>
-        <thead>
-          <tr style={{ background: '#f3f4f6' }}>
-            <th style={{ border: '1px solid #ccc', padding: '8px 12px', textAlign: 'left', fontSize: '12px', fontWeight: 'bold' }}>#</th>
-            <th style={{ border: '1px solid #ccc', padding: '8px 12px', textAlign: 'left', fontSize: '12px', fontWeight: 'bold' }}>SKU</th>
-            <th style={{ border: '1px solid #ccc', padding: '8px 12px', textAlign: 'left', fontSize: '12px', fontWeight: 'bold' }}>Product</th>
-            <th style={{ border: '1px solid #ccc', padding: '8px 12px', textAlign: 'left', fontSize: '12px', fontWeight: 'bold' }}>Color / Size</th>
-            <th style={{ border: '1px solid #ccc', padding: '8px 12px', textAlign: 'center', fontSize: '12px', fontWeight: 'bold' }}>Qty</th>
-          </tr>
-        </thead>
-        <tbody>
-          {order.items?.map((item: any, idx: number) => (
-            <tr key={item.id}>
-              <td style={{ border: '1px solid #ccc', padding: '8px 12px', textAlign: 'center' }}>{idx + 1}</td>
-              <td style={{ border: '1px solid #ccc', padding: '8px 12px', fontFamily: 'monospace', fontSize: '12px' }}>{item.skuSnapshot}</td>
-              <td style={{ border: '1px solid #ccc', padding: '8px 12px' }}>{item.productNameSnapshot}</td>
-              <td style={{ border: '1px solid #ccc', padding: '8px 12px' }}>{item.colorSnapshot} / {item.sizeSnapshot}</td>
-              <td style={{ border: '1px solid #ccc', padding: '8px 12px', textAlign: 'center', fontWeight: 'bold' }}>{item.quantity}</td>
-            </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr style={{ background: '#f9fafb' }}>
-            <td colSpan={4} style={{ border: '1px solid #ccc', padding: '8px 12px', textAlign: 'right', fontWeight: 'bold', fontSize: '12px' }}>Total Units</td>
-            <td style={{ border: '1px solid #ccc', padding: '8px 12px', textAlign: 'center', fontWeight: 'bold' }}>{order.qualifyingQty}</td>
-          </tr>
-        </tfoot>
-      </table>
-
-      {/* Notes */}
-      {order.adminNotes && (
-        <div style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '12px', marginBottom: '24px' }}>
-          <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#666', textTransform: 'uppercase', marginBottom: '4px' }}>Admin Notes</div>
-          <div style={{ fontSize: '12px' }}>{order.adminNotes}</div>
-        </div>
-      )}
-
-      {/* Footer */}
-      <div style={{ borderTop: '2px solid #000', paddingTop: '16px', marginTop: '32px', fontSize: '12px', color: '#666', display: 'flex', justifyContent: 'space-between' }}>
-        <div>StarFashion Wholesale — Dispatch Document</div>
-        <div>Generated: {new Date().toLocaleString()}</div>
-      </div>
-
-      {/* Signatures */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px', marginTop: '40px' }}>
-        <div>
-          <div style={{ borderTop: '1px solid #000', marginTop: '48px', paddingTop: '8px', fontSize: '12px', textAlign: 'center', color: '#666' }}>Packed By</div>
-        </div>
-        <div>
-          <div style={{ borderTop: '1px solid #000', marginTop: '48px', paddingTop: '8px', fontSize: '12px', textAlign: 'center', color: '#666' }}>Received By</div>
-        </div>
-      </div>
-    </div>
   );
 }
