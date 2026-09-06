@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShoppingCart, Trash2, ArrowRight, Tag, ShieldAlert, CheckCircle2, CreditCard, Upload, X } from 'lucide-react';
+import { ShoppingCart, Trash2, ArrowRight, Tag, ShieldAlert, CheckCircle2, CreditCard, Upload, X, Minus, Plus } from 'lucide-react';
 
 export default function CartPage() {
   const router = useRouter();
@@ -24,6 +24,7 @@ export default function CartPage() {
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
 
   const fetchCart = () => {
     setLoading(true);
@@ -43,6 +44,20 @@ export default function CartPage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ items: [{ variantId, quantity: 0 }] }),
+    });
+    fetchCart();
+  };
+
+  const handleUpdateQty = async (variantId: string, newQty: number) => {
+    if (newQty < 1) {
+      await handleRemoveItem(variantId);
+      return;
+    }
+    setUpdatingItemId(variantId);
+    await fetch('/api/v1/cart/items', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: [{ variantId, quantity: newQty }] }),
     });
     fetchCart();
   };
@@ -247,7 +262,15 @@ export default function CartPage() {
                         <div className="text-[11px] text-slate-400">SKU: {item.sku} | Color: {item.colorName} | Size: {item.sizeName}</div>
                       </td>
                       <td className="py-3 px-4 text-center text-slate-600">Rs.{item.baseUnitPrice.toFixed(2)}</td>
-                      <td className="py-3 px-4 text-center font-bold text-slate-900">{item.quantity}</td>
+                      <td className="py-3 px-4 text-center">
+                        <div className="inline-flex items-center bg-slate-100 rounded-lg">
+                          <button onClick={() => handleUpdateQty(item.variantId, item.quantity - 1)} disabled={updatingItemId === item.variantId}
+                            className="p-1.5 text-slate-500 hover:text-slate-700 disabled:opacity-40 transition-colors"><Minus className="w-3.5 h-3.5" /></button>
+                          <span className="w-10 text-center text-xs font-bold text-slate-900">{item.quantity}</span>
+                          <button onClick={() => handleUpdateQty(item.variantId, item.quantity + 1)} disabled={updatingItemId === item.variantId}
+                            className="p-1.5 text-slate-500 hover:text-slate-700 disabled:opacity-40 transition-colors"><Plus className="w-3.5 h-3.5" /></button>
+                        </div>
+                      </td>
                       <td className="py-3 px-4 text-right text-slate-500">Rs.{item.lineGross.toFixed(2)}</td>
                       <td className="py-3 px-4 text-right text-emerald-600 font-semibold">{item.lineDiscount > 0 ? `-Rs.${item.lineDiscount.toFixed(2)}` : 'Rs.0.00'}</td>
                       <td className="py-3 px-4 text-right font-bold text-slate-900">Rs.{item.lineNet.toFixed(2)}</td>
@@ -284,8 +307,14 @@ export default function CartPage() {
                       <div className="text-xs font-bold text-slate-700">Rs.{item.baseUnitPrice.toFixed(0)}</div>
                     </div>
                     <div>
-                      <div className="text-[10px] text-slate-400 uppercase font-semibold mb-0.5">Qty</div>
-                      <div className="text-xs font-bold text-slate-900">{item.quantity}</div>
+                      <div className="text-[10px] text-slate-400 uppercase font-semibold mb-1">Qty</div>
+                      <div className="inline-flex items-center bg-slate-100 rounded-lg">
+                        <button onClick={() => handleUpdateQty(item.variantId, item.quantity - 1)} disabled={updatingItemId === item.variantId}
+                          className="p-1.5 text-slate-500 hover:text-slate-700 disabled:opacity-40 transition-colors"><Minus className="w-3 h-3" /></button>
+                        <span className="w-8 text-center text-xs font-bold text-slate-900">{item.quantity}</span>
+                        <button onClick={() => handleUpdateQty(item.variantId, item.quantity + 1)} disabled={updatingItemId === item.variantId}
+                          className="p-1.5 text-slate-500 hover:text-slate-700 disabled:opacity-40 transition-colors"><Plus className="w-3 h-3" /></button>
+                      </div>
                     </div>
                     <div>
                       <div className="text-[10px] text-slate-400 uppercase font-semibold mb-0.5">Line Total</div>
