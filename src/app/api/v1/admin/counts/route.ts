@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
       onHoldOrders,
       acceptedOrders,
       confirmedOrders,
+      processingOrders,
       pendingPayments,
       pendingApprovals,
       lowStock,
@@ -22,6 +23,7 @@ export async function GET(request: NextRequest) {
       prisma.order.count({ where: { status: 'ON_HOLD' } }),
       prisma.order.count({ where: { status: 'ACCEPTED' } }),
       prisma.order.count({ where: { status: 'CONFIRMED' } }),
+      prisma.order.count({ where: { status: 'PROCESSING' } }),
       prisma.payment.count({ where: { status: 'PENDING' } }),
       prisma.customerCompany.count({ where: { onboardingStatus: 'PENDING_APPROVAL' } }),
       prisma.inventory.aggregate({
@@ -43,6 +45,7 @@ export async function GET(request: NextRequest) {
       onHoldOrders,
       acceptedOrders,
       confirmedOrders,
+      processingOrders,
       pendingPayments,
       pendingApprovals,
       lowStock,

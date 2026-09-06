@@ -16,6 +16,7 @@ import {
   UserCog,
   UserPlus,
   Box,
+  Truck,
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -71,6 +72,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: '/admin/products', label: 'Products', icon: Tags, roles: ['MASTER_ADMIN', 'ADMIN', 'USER'], dot: null },
     { href: '/admin/stock', label: 'New Stock', icon: Box, roles: ['MASTER_ADMIN'], dot: counts?.lowStock > 0 ? 'amber' : null, count: counts?.lowStock },
     { href: '/admin/orders', label: 'Order Processing', icon: Package, roles: ['MASTER_ADMIN', 'ADMIN'], dot: counts?.newOrders > 0 ? 'red' : null, count: counts?.newOrders },
+    { href: '/admin/dispatch', label: 'Dispatch', icon: Truck, roles: ['MASTER_ADMIN', 'ADMIN'], dot: counts?.processingOrders > 0 ? 'green' : null, count: counts?.processingOrders },
     { href: '/admin/tiers', label: 'Pricing Tiers', icon: Sliders, roles: ['MASTER_ADMIN', 'ADMIN'], dot: null },
     { href: '/admin/payments', label: 'Record Payments', icon: CreditCard, roles: ['MASTER_ADMIN', 'ADMIN'], dot: counts?.pendingPayments > 0 ? 'purple' : null, count: counts?.pendingPayments },
     { href: '/admin/customers', label: 'Customers & Credit', icon: Users, roles: ['MASTER_ADMIN', 'ADMIN'], dot: counts?.pendingApprovals > 0 ? 'blue' : null, count: counts?.pendingApprovals },

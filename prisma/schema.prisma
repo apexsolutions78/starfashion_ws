@@ -322,7 +322,7 @@ model Order {
   id                      String    @id @default(uuid())
   orderNumber             String    @unique
   customerId              String
-  status                  String    @default("SUBMITTED") // "SUBMITTED" | "PENDING_REVIEW" | "ON_HOLD" | "ACCEPTED" | "CONFIRMED" | "PROCESSING" | "PACKED" | "SHIPPED" | "COMPLETED" | "CANCELLED"
+  status                  String    @default("SUBMITTED") // "SUBMITTED" | "PENDING_REVIEW" | "ON_HOLD" | "ACCEPTED" | "CONFIRMED" | "PROCESSING" | "DISPATCHED" | "SHIPPED" | "COMPLETED" | "CANCELLED"
   qualifyingQty           Int
   tierIdSnapshot          String?
   discountPercentSnapshot Float     @default(0.0)

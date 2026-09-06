@@ -159,6 +159,8 @@ export default function AdminOrdersPage() {
       case 'ON_HOLD': return 'bg-orange-500/20 text-orange-300 border-orange-500/30';
       case 'ACCEPTED': return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
       case 'CONFIRMED': return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
+      case 'PROCESSING': return 'bg-purple-500/20 text-purple-300 border-purple-500/30';
+      case 'DISPATCHED': return 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30';
       case 'SHIPPED': return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
       case 'CANCELLED': return 'bg-red-500/20 text-red-300 border-red-500/30';
       default: return 'bg-slate-500/20 text-slate-300 border-slate-500/30';

@@ -9,7 +9,7 @@ const updateStatusSchema = z.object({
     'SUBMITTED',
     'CONFIRMED',
     'PROCESSING',
-    'PACKED',
+    'DISPATCHED',
     'SHIPPED',
     'COMPLETED',
     'CANCELLED',

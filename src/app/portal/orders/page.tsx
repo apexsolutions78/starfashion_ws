@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Package, Clock, CheckCircle, XCircle, ChevronDown, ChevronUp, AlertCircle, Bell, CreditCard, Upload } from 'lucide-react';
+import { Package, Clock, CheckCircle, XCircle, ChevronDown, ChevronUp, AlertCircle, Bell, CreditCard, Upload, Truck } from 'lucide-react';
 
 export default function CustomerOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -157,6 +157,8 @@ export default function CustomerOrdersPage() {
         return <span className="bg-blue-100 text-blue-800 border border-blue-300 text-xs font-semibold px-2.5 py-0.5 rounded-full">Confirmed</span>;
       case 'PROCESSING':
         return <span className="bg-purple-100 text-purple-800 border border-purple-300 text-xs font-semibold px-2.5 py-0.5 rounded-full">Processing</span>;
+      case 'DISPATCHED':
+        return <span className="bg-indigo-100 text-indigo-800 border border-indigo-300 text-xs font-semibold px-2.5 py-0.5 rounded-full flex items-center space-x-1"><Truck className="w-3 h-3" /><span>Dispatched</span></span>;
       case 'SHIPPED':
         return <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-semibold px-2.5 py-0.5 rounded-full">Shipped</span>;
       case 'CANCELLED':
