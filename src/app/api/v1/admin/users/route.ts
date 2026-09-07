@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
         lastName: true,
         phone: true,
         role: true,
+        department: true,
         status: true,
         lastLoginAt: true,
         createdAt: true,
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { email, password, firstName, lastName, phone, role } = body;
+    const { email, password, firstName, lastName, phone, role, department } = body;
 
     // Validate required fields
     if (!email || !password || !firstName || !lastName) {
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate role
-    if (role && !['MASTER_ADMIN', 'ADMIN', 'USER'].includes(role)) {
+    if (role && !['MASTER_ADMIN', 'ADMIN', 'USER', 'SALES'].includes(role)) {
       return ApiUtils.error('Invalid role');
     }
 
@@ -92,6 +93,7 @@ export async function POST(request: NextRequest) {
         phone: phone || null,
         userType: 'ADMIN',
         role: role || 'USER',
+        department: department || null,
         status: 'ACTIVE',
       },
       select: {
@@ -153,7 +155,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Validate role
-    if (role && !['MASTER_ADMIN', 'ADMIN', 'USER'].includes(role)) {
+    if (role && !['MASTER_ADMIN', 'ADMIN', 'USER', 'SALES'].includes(role)) {
       return ApiUtils.error('Invalid role');
     }
 

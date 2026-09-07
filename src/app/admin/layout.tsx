@@ -17,6 +17,7 @@ import {
   UserPlus,
   Box,
   Truck,
+  Contact,
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -32,6 +33,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       .then((data) => {
         if (data.success && data.data?.session?.userType === 'ADMIN') {
           setSession(data.data.session);
+          // Redirect SALES users to their portal
+          if (data.data.session.role === 'SALES') {
+            router.push('/sales/dashboard');
+            return;
+          }
           fetch('/api/v1/admin/profile')
             .then((res) => res.json())
             .then((profileData) => {
@@ -86,7 +92,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: '/admin/customers', label: 'Customers & Credit', icon: Users, roles: ['MASTER_ADMIN', 'ADMIN'], dot: counts?.pendingApprovals > 0 ? 'blue' : null, count: counts?.pendingApprovals },
     { href: '/admin/audit-logs', label: 'Audit Trail', icon: ShieldAlert, roles: ['MASTER_ADMIN', 'ADMIN'], dot: null },
     { href: '/admin/users', label: 'User Management', icon: UserPlus, roles: ['MASTER_ADMIN'], dot: null },
-    { href: '/admin/profile', label: 'Admin Profile', icon: UserCog, roles: ['MASTER_ADMIN', 'ADMIN', 'USER'], dot: null },
+    { href: '/admin/sales', label: 'Sales Department', icon: Contact, roles: ['MASTER_ADMIN'], dot: null },
+    { href: '/admin/profile', label: 'Admin Profile', icon: UserCog, roles: ['MASTER_ADMIN', 'ADMIN', 'USER', 'SALES'], dot: null },
   ];
 
   const filteredNavItems = navItems.filter(item => !userRole || item.roles.includes(userRole));

@@ -22,7 +22,8 @@ model User {
   lastName         String
   phone            String?
   userType         String   @default("CUSTOMER") // "ADMIN" | "CUSTOMER"
-  role             String?  @default("USER")     // "MASTER_ADMIN" | "ADMIN" | "USER" (for ADMIN users only)
+  role             String?  @default("USER")     // "MASTER_ADMIN" | "ADMIN" | "USER" | "SALES"
+  department       String?                        // "SALES" | null (for admin users)
   status           String   @default("ACTIVE")   // "ACTIVE" | "INACTIVE" | "SUSPENDED"
   approvalStatus   String   @default("APPROVED") // "PENDING" | "APPROVED" | "REJECTED"
   rejectionReason  String?
@@ -35,6 +36,11 @@ model User {
   createdTransactions AccountTransaction[] @relation("CreatedTransactions")
   auditLogs           AuditLog[]
   systemSettings      SystemSetting[]      @relation("UpdatedSettings")
+  salesAssignments    SalesAssignment[]    @relation("SalesAssignments")
+  assignedByMe        SalesAssignment[]    @relation("AssignedByUser")
+  salesPermission     SalesPermission?     @relation("SalesPermissionUser")
+  salesCommissions    SalesCommission[]    @relation("SalesCommissionUser")
+  managedCustomers    CustomerCompany[]    @relation("SalesManager")
 
   @@map("users")
 }
@@ -56,6 +62,7 @@ model CustomerCompany {
   rejectionReason    String?
   approvedAt         DateTime?
   approvedByUserId   String?
+  assignedSalesUserId String?
   notes              String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
@@ -70,6 +77,8 @@ model CustomerCompany {
   accountTransactions AccountTransaction[]
   creditNotes         CreditNote[]
   notifications       CustomerNotification[]
+  salesAssignments    SalesAssignment[]
+  salesManager        User?                @relation("SalesManager", fields: [assignedSalesUserId], references: [id])
 
   @@map("customer_companies")
 }
@@ -570,4 +579,55 @@ model CustomerNotification {
   customer CustomerCompany @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   @@map("customer_notifications")
+}
+
+// ------------------------------------------------------
+// Sales Department Models
+// ------------------------------------------------------
+
+model SalesAssignment {
+  id           String   @id @default(uuid())
+  salesUserId  String
+  customerId   String
+  assignedByUserId String
+  assignedAt   DateTime @default(now())
+  notes        String?
+
+  salesUser    User            @relation("SalesAssignments", fields: [salesUserId], references: [id], onDelete: Cascade)
+  customer     CustomerCompany @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  assignedBy   User            @relation("AssignedByUser", fields: [assignedByUserId], references: [id])
+
+  @@unique([salesUserId, customerId])
+  @@map("sales_assignments")
+}
+
+model SalesPermission {
+  id                 String   @id @default(uuid())
+  salesUserId        String
+  canProcessOrders   Boolean  @default(false)
+  canDispatchOrders  Boolean  @default(false)
+  canManageTiers     Boolean  @default(false)
+  canChangePaymentTerms Boolean @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  salesUser User @relation("SalesPermissionUser", fields: [salesUserId], references: [id], onDelete: Cascade)
+
+  @@unique([salesUserId])
+  @@map("sales_permissions")
+}
+
+model SalesCommission {
+  id            String   @id @default(uuid())
+  salesUserId   String
+  commissionRate Float    @default(0) // percentage of sales
+  bonusAmount   Float    @default(0) // fixed bonus amount
+  period        String?  // e.g. "2026-Q1", "2026-01"
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  salesUser User @relation("SalesCommissionUser", fields: [salesUserId], references: [id], onDelete: Cascade)
+
+  @@map("sales_commissions")
 }
