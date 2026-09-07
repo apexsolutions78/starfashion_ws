@@ -112,7 +112,7 @@ export default function SalesUserDetailPage({ params }: { params: Promise<{ id: 
       const res = await fetch(`/api/v1/admin/sales/${id}`);
       const data = await res.json();
       if (data.success) {
-        const u = data.data.user;
+        const u = data.data.salesUser;
         setUser(u);
         setFormFirstName(u.firstName);
         setFormLastName(u.lastName);
@@ -144,8 +144,15 @@ export default function SalesUserDetailPage({ params }: { params: Promise<{ id: 
       const res = await fetch(`/api/v1/admin/sales/${id}/assignments`);
       const data = await res.json();
       if (data.success) {
-        setAssignments(data.data.assignments);
-        setUnassignedCustomers(data.data.unassignedCustomers || []);
+        setAssignments(data.data.assignments || []);
+      }
+      // Also fetch unassigned customers
+      const custRes = await fetch('/api/v1/admin/customers');
+      const custData = await custRes.json();
+      if (custData.success) {
+        const assignedIds = (data.data.assignments || []).map((a: any) => a.customerId);
+        const allCustomers = Array.isArray(custData.data) ? custData.data : (custData.data.customers || []);
+        setUnassignedCustomers(allCustomers.filter((c: any) => !assignedIds.includes(c.id)));
       }
     } catch (error) {
       console.error('Error fetching assignments:', error);
@@ -166,10 +173,10 @@ export default function SalesUserDetailPage({ params }: { params: Promise<{ id: 
 
   const fetchReports = async () => {
     try {
-      const res = await fetch(`/api/v1/admin/sales/${id}/reports`);
+      const res = await fetch(`/api/v1/sales/reports`);
       const data = await res.json();
       if (data.success) {
-        setReports(data.data.reports);
+        setReports(data.data.reports || data.data || null);
       }
     } catch (error) {
       console.error('Error fetching reports:', error);

@@ -39,7 +39,7 @@ export default function SalesUsersPage() {
       const res = await fetch('/api/v1/admin/sales');
       const data = await res.json();
       if (data.success) {
-        setUsers(data.data.users);
+        setUsers(data.data.salesUsers || []);
       }
     } catch (error) {
       console.error('Error fetching sales users:', error);
