@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { getAuthSession } from '@/lib/middleware-auth';
 import { ApiUtils } from '@/lib/api-response';
+import { requirePermission, PERMISSIONS } from '@/lib/permissions';
 import { writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
 import crypto from 'crypto';
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
 const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png'];
 
@@ -15,10 +15,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getAuthSession(request);
-    if (!session || session.userType !== 'ADMIN') {
-      return ApiUtils.forbidden();
-    }
+    const auth = await requirePermission(request, PERMISSIONS.CATALOG_WRITE);
+    if (!auth) return ApiUtils.forbidden();
 
     const { id } = await params;
 
@@ -74,7 +72,7 @@ export async function POST(
 
       if (file.size > MAX_FILE_SIZE) {
         const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-        errors.push(`"${file.name}" exceeds 5MB limit (${sizeMB}MB)`);
+        errors.push(`"${file.name}" exceeds 3MB limit (${sizeMB}MB)`);
         continue;
       }
 
@@ -125,10 +123,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getAuthSession(request);
-    if (!session || session.userType !== 'ADMIN') {
-      return ApiUtils.forbidden();
-    }
+    const auth = await requirePermission(request, PERMISSIONS.CATALOG_WRITE);
+    if (!auth) return ApiUtils.forbidden();
 
     const { id } = await params;
     const { searchParams } = new URL(request.url);

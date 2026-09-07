@@ -16,6 +16,9 @@ export async function GET(req: NextRequest) {
         { name: { contains: query } },
         { articleNumber: { contains: query } },
         { description: { contains: query } },
+        { shirtStyle: { contains: query } },
+        { dupattaStyle: { contains: query } },
+        { trouserStyle: { contains: query } },
       ];
     }
 

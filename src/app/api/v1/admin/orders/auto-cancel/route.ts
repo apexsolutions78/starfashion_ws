@@ -1,14 +1,13 @@
 import { NextRequest } from 'next/server';
-import { getAuthSession } from '@/lib/middleware-auth';
+import { requirePermission, PERMISSIONS } from '@/lib/permissions';
 import { ApiUtils } from '@/lib/api-response';
 import { prisma } from '@/lib/db';
 
 // Auto-cancel expired ON_HOLD orders (can be called by cron or admin)
 export async function POST(request: NextRequest) {
   try {
-    // This endpoint can be called internally or by a cron job
-    // For now, require admin auth
-    const session = await getAuthSession(request);
+    const auth = await requirePermission(request, PERMISSIONS.ORDERS_PROCESS);
+    if (!auth) return ApiUtils.forbidden();
 
     const now = new Date();
 
@@ -44,8 +43,8 @@ export async function POST(request: NextRequest) {
       // Audit log
       await prisma.auditLog.create({
         data: {
-          actorId: session?.userId || 'SYSTEM',
-          actorEmail: session?.email || 'system@starfashion.com',
+          actorId: auth.session?.userId || 'SYSTEM',
+          actorEmail: auth.session?.email || 'system@starfashion.com',
           action: 'ORDER_AUTO_CANCELLED',
           entityType: 'Order',
           entityId: order.id,

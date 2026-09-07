@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { getAuthSession } from '@/lib/middleware-auth';
+import { requirePermission, PERMISSIONS } from '@/lib/permissions';
 import { ApiUtils } from '@/lib/api-response';
 import { prisma } from '@/lib/db';
 
@@ -9,10 +9,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getAuthSession(request);
-    if (!session || session.userType !== 'ADMIN') {
-      return ApiUtils.forbidden('Admin authorization required');
-    }
+    const auth = await requirePermission(request, PERMISSIONS.ORDERS_READ);
+    if (!auth) return ApiUtils.forbidden();
 
     const { id } = await params;
 
@@ -68,10 +66,8 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getAuthSession(request);
-    if (!session || session.userType !== 'ADMIN') {
-      return ApiUtils.forbidden('Admin authorization required');
-    }
+    const auth = await requirePermission(request, PERMISSIONS.ORDERS_PROCESS);
+    if (!auth) return ApiUtils.forbidden();
 
     const { id } = await params;
     const body = await request.json();
@@ -143,7 +139,7 @@ export async function PUT(
         adminNotes: adminNotes || null,
         status: 'ON_HOLD',
         customerReviewed: false,
-        reviewedByUserId: session.userId,
+        reviewedByUserId: auth.session.userId,
         reviewedAt: new Date(),
       },
     });
@@ -162,8 +158,8 @@ export async function PUT(
     // Audit Log
     await prisma.auditLog.create({
       data: {
-        actorId: session.userId,
-        actorEmail: session.email,
+        actorId: auth.session.userId,
+        actorEmail: auth.session.email,
         action: 'ORDER_REVIEWED',
         entityType: 'Order',
         entityId: id,

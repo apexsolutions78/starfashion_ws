@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { CreditCard, Plus, CheckCircle2, ArrowDownLeft } from 'lucide-react';
+import { usePermissions, HasPermission } from '@/lib/permissions-context';
 
 export default function AdminPaymentsPage() {
+  const { hasPermission } = usePermissions();
   const [payments, setPayments] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,13 +91,15 @@ export default function AdminPaymentsPage() {
           <p className="text-slate-400 text-xs mt-1">Post payment receipts to customer ledgers and settle open invoices.</p>
         </div>
 
-        <button
-          onClick={() => setShowModal(true)}
-          className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-5 py-3 rounded-xl shadow-lg shadow-emerald-600/30 flex items-center space-x-2 transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Record New Payment</span>
-        </button>
+        <HasPermission permission="payments:record">
+          <button
+            onClick={() => setShowModal(true)}
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-5 py-3 rounded-xl shadow-lg shadow-emerald-600/30 flex items-center space-x-2 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Record New Payment</span>
+          </button>
+        </HasPermission>
       </div>
 
       {message && (

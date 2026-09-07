@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { Users, Plus, Building2, CreditCard, Edit2, Save, X, FileText, Download, CheckCircle, AlertCircle, Check, Clock, UserCheck, MapPin, Phone, Mail } from 'lucide-react';
+import { usePermissions, HasPermission } from '@/lib/permissions-context';
 
 export default function AdminCustomersPage() {
+  const { hasPermission } = usePermissions();
   const [customers, setCustomers] = useState<any[]>([]);
   const [pendingCustomers, setPendingCustomers] = useState<any[]>([]);
   const [paymentTerms, setPaymentTerms] = useState<any[]>([]);
@@ -292,26 +294,30 @@ export default function AdminCustomersPage() {
                   </div>
                 </div>
                 <div className="flex space-x-2">
-                  <button
-                    onClick={() => {
-                      setShowApproveModal(c);
-                      setApproveCreditLimit('0');
-                      setApprovePaymentTermsId('term-due-on-order');
-                    }}
-                    disabled={approvingId === c.id}
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2 rounded-lg transition-colors flex items-center justify-center space-x-1 disabled:opacity-50"
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                    <span>{approvingId === c.id ? 'Approving...' : 'Approve'}</span>
-                  </button>
-                  <button
-                    onClick={() => setShowRejectModal(c.id)}
-                    disabled={rejectingId === c.id}
-                    className="flex-1 bg-red-600 hover:bg-red-500 text-white text-xs font-bold py-2 rounded-lg transition-colors flex items-center justify-center space-x-1 disabled:opacity-50"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                    <span>Reject</span>
-                  </button>
+                  <HasPermission permission="customers:manage">
+                    <button
+                      onClick={() => {
+                        setShowApproveModal(c);
+                        setApproveCreditLimit('0');
+                        setApprovePaymentTermsId('term-due-on-order');
+                      }}
+                      disabled={approvingId === c.id}
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2 rounded-lg transition-colors flex items-center justify-center space-x-1 disabled:opacity-50"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>{approvingId === c.id ? 'Approving...' : 'Approve'}</span>
+                    </button>
+                  </HasPermission>
+                  <HasPermission permission="customers:manage">
+                    <button
+                      onClick={() => setShowRejectModal(c.id)}
+                      disabled={rejectingId === c.id}
+                      className="flex-1 bg-red-600 hover:bg-red-500 text-white text-xs font-bold py-2 rounded-lg transition-colors flex items-center justify-center space-x-1 disabled:opacity-50"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      <span>Reject</span>
+                    </button>
+                  </HasPermission>
                 </div>
               </div>
             ))}
@@ -342,13 +348,15 @@ export default function AdminCustomersPage() {
                 }`}>
                   {c.status}
                 </span>
-                <button
-                  onClick={() => handleEditCustomer(c)}
-                  className="text-slate-400 hover:text-indigo-400 p-1.5 rounded hover:bg-slate-800 transition-colors"
-                  title="Edit"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
+                <HasPermission permission="customers:manage">
+                  <button
+                    onClick={() => handleEditCustomer(c)}
+                    className="text-slate-400 hover:text-indigo-400 p-1.5 rounded hover:bg-slate-800 transition-colors"
+                    title="Edit"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                </HasPermission>
               </div>
             </div>
 
@@ -459,14 +467,16 @@ export default function AdminCustomersPage() {
               >
                 Cancel
               </button>
-              <button
-                onClick={handleSaveCustomer}
-                disabled={saving}
-                className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2 disabled:opacity-50"
-              >
-                <Save className="w-4 h-4" />
-                <span>{saving ? 'Saving...' : 'Save'}</span>
-              </button>
+              <HasPermission permission="customers:manage">
+                <button
+                  onClick={handleSaveCustomer}
+                  disabled={saving}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2 disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{saving ? 'Saving...' : 'Save'}</span>
+                </button>
+              </HasPermission>
             </div>
           </div>
         </div>
@@ -545,14 +555,16 @@ export default function AdminCustomersPage() {
               >
                 Cancel
               </button>
-              <button
-                onClick={() => handleApprove(showApproveModal.id)}
-                disabled={approvingId === showApproveModal.id}
-                className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2 disabled:opacity-50"
-              >
-                <Check className="w-4 h-4" />
-                <span>{approvingId === showApproveModal.id ? 'Approving...' : 'Approve Customer'}</span>
-              </button>
+              <HasPermission permission="customers:manage">
+                <button
+                  onClick={() => handleApprove(showApproveModal.id)}
+                  disabled={approvingId === showApproveModal.id}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2 disabled:opacity-50"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>{approvingId === showApproveModal.id ? 'Approving...' : 'Approve Customer'}</span>
+                </button>
+              </HasPermission>
             </div>
           </div>
         </div>
@@ -587,14 +599,16 @@ export default function AdminCustomersPage() {
               >
                 Cancel
               </button>
-              <button
-                onClick={() => handleReject(showRejectModal)}
-                disabled={rejectingId === showRejectModal}
-                className="flex-1 bg-red-600 hover:bg-red-500 text-white py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2 disabled:opacity-50"
-              >
-                <X className="w-4 h-4" />
-                <span>{rejectingId === showRejectModal ? 'Rejecting...' : 'Reject'}</span>
-              </button>
+              <HasPermission permission="customers:manage">
+                <button
+                  onClick={() => handleReject(showRejectModal)}
+                  disabled={rejectingId === showRejectModal}
+                  className="flex-1 bg-red-600 hover:bg-red-500 text-white py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2 disabled:opacity-50"
+                >
+                  <X className="w-4 h-4" />
+                  <span>{rejectingId === showRejectModal ? 'Rejecting...' : 'Reject'}</span>
+                </button>
+              </HasPermission>
             </div>
           </div>
         </div>

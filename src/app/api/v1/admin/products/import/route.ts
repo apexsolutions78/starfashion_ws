@@ -2,11 +2,15 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getAuthSession } from '@/lib/middleware-auth';
 import { ApiUtils } from '@/lib/api-response';
+import { requirePermission, PERMISSIONS } from '@/lib/permissions';
 
 interface ProductRow {
   articleNumber: string;
   name: string;
   description: string;
+  shirtStyle: string;
+  dupattaStyle: string;
+  trouserStyle: string;
   categoryName: string;
   collectionName: string;
   basePrice: number;
@@ -32,27 +36,61 @@ function parseCSV(csvContent: string): ProductRow[] {
 
     const columns = line.split(',').map(col => col.trim().replace(/^"|"$/g, ''));
 
-    // Support both old format (11 cols with slug) and new format (10 cols without slug)
+    // New format: 13 cols (Article, Price, Name, Description, ShirtStyle, DupattaStyle, TrouserStyle, Category, Collection, Color, Size, SKU, Stock)
+    // New format without SKU: 12 cols
+    // Legacy format (11 cols with slug): Article, Name, Slug, Desc, Category, Collection, Price, Color, Size, SKU, Stock
+    // Legacy format (10 cols without slug): Article, Name, Desc, Category, Collection, Price, Color, Size, SKU, Stock
     if (columns.length < 10) continue;
 
-    const hasSlug = columns.length >= 11;
-    const offset = hasSlug ? 1 : 0; // Skip slug column if present
+    // Detect format by checking if column 1 looks like a price (number) vs a name (text)
+    const col1AsPrice = parseFloat(columns[1]);
+    const isNewFormat = !isNaN(col1AsPrice) && col1AsPrice > 0 && columns.length >= 12;
 
-    const stockValue = parseInt(columns[9 + offset]) || 0;
-    if (stockValue < 0) continue;
+    if (isNewFormat) {
+      // New format: Article, Price, Name, Description, ShirtStyle, DupattaStyle, TrouserStyle, Category, Collection, Color, Size, [SKU], Stock
+      const stockIdx = columns.length >= 13 ? 12 : 11;
+      const stockValue = parseInt(columns[stockIdx]) || 0;
+      if (stockValue < 0) continue;
 
-    rows.push({
-      articleNumber: columns[0],
-      name: columns[1],
-      description: hasSlug ? columns[3] : columns[2],
-      categoryName: hasSlug ? columns[4] : columns[3],
-      collectionName: hasSlug ? columns[5] : columns[4],
-      basePrice: parseFloat(hasSlug ? columns[6] : columns[5]) || 0,
-      colorName: hasSlug ? columns[7] : columns[6],
-      sizeName: hasSlug ? columns[8] : columns[7],
-      sku: hasSlug ? columns[9] : columns[8],
-      stock: stockValue,
-    });
+      rows.push({
+        articleNumber: columns[0],
+        name: columns[2] || '',
+        description: columns[3] || '',
+        shirtStyle: columns[4] || '',
+        dupattaStyle: columns[5] || '',
+        trouserStyle: columns[6] || '',
+        categoryName: columns[7],
+        collectionName: columns[8],
+        basePrice: parseFloat(columns[1]) || 0,
+        colorName: columns[9],
+        sizeName: columns[10],
+        sku: columns.length >= 13 ? columns[11] : '',
+        stock: stockValue,
+      });
+    } else {
+      // Legacy format detection
+      const hasSlug = columns.length >= 11 && !isNaN(parseFloat(columns[5]));
+      const offset = hasSlug ? 1 : 0;
+
+      const stockValue = parseInt(columns[9 + offset]) || 0;
+      if (stockValue < 0) continue;
+
+      rows.push({
+        articleNumber: columns[0],
+        name: columns[1],
+        description: hasSlug ? columns[3] : columns[2],
+        shirtStyle: '',
+        dupattaStyle: '',
+        trouserStyle: '',
+        categoryName: hasSlug ? columns[4] : columns[3],
+        collectionName: hasSlug ? columns[5] : columns[4],
+        basePrice: parseFloat(hasSlug ? columns[6] : columns[5]) || 0,
+        colorName: hasSlug ? columns[7] : columns[6],
+        sizeName: hasSlug ? columns[8] : columns[7],
+        sku: hasSlug ? columns[9] : columns[8],
+        stock: stockValue,
+      });
+    }
   }
 
   return rows;
@@ -160,8 +198,8 @@ function generateSizeSortOrder(sizeName: string): number {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getAuthSession(request);
-    if (!session || session.userType !== 'ADMIN') {
+    const auth = await requirePermission(request, PERMISSIONS.CATALOG_WRITE);
+    if (!auth) {
       return ApiUtils.forbidden();
     }
 
@@ -358,9 +396,12 @@ export async function POST(request: NextRequest) {
             const product = await prisma.product.create({
               data: {
                 articleNumber: row.articleNumber,
-                name: row.name,
+                name: row.name || null,
                 slug,
                 description: row.description || null,
+                shirtStyle: row.shirtStyle || null,
+                dupattaStyle: row.dupattaStyle || null,
+                trouserStyle: row.trouserStyle || null,
                 categoryId: category.id,
                 collectionId: collection?.id || null,
                 basePrice: row.basePrice,

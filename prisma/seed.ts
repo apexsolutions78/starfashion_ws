@@ -63,6 +63,37 @@ async function main() {
   console.log('✅ Wholesale Pricing Tiers seeded (30+=10%, 70+=12%, 101+=15%).');
 
   // 4. Seed Roles & Permissions
+  const permissions = [
+    { code: 'catalog:read', description: 'View product catalog' },
+    { code: 'catalog:write', description: 'Create and edit products' },
+    { code: 'orders:read', description: 'View orders' },
+    { code: 'orders:process', description: 'Process and fulfill orders' },
+    { code: 'orders:dispatch', description: 'Dispatch orders' },
+    { code: 'payments:read', description: 'View payments' },
+    { code: 'payments:record', description: 'Record payments' },
+    { code: 'tiers:read', description: 'View pricing tiers' },
+    { code: 'tiers:manage', description: 'Manage pricing tiers' },
+    { code: 'customers:read', description: 'View customers' },
+    { code: 'customers:manage', description: 'Manage customers' },
+    { code: 'stock:read', description: 'View stock levels' },
+    { code: 'stock:manage', description: 'Manage stock levels' },
+    { code: 'reports:read', description: 'View reports' },
+    { code: 'users:read', description: 'View admin users' },
+    { code: 'users:manage', description: 'Manage admin users' },
+    { code: 'sales:read', description: 'View sales data' },
+    { code: 'sales:manage', description: 'Manage sales data' },
+    { code: 'settings:read', description: 'View system settings' },
+    { code: 'settings:manage', description: 'Manage system settings' },
+  ];
+  for (const p of permissions) {
+    await prisma.permission.upsert({
+      where: { code: p.code },
+      update: { description: p.description },
+      create: p,
+    });
+  }
+  console.log('✅ Permissions seeded (20 permissions).');
+
   const roles = ['MASTER_ADMIN', 'SALES_ADMIN', 'ACCOUNTS_ADMIN', 'WAREHOUSE_ADMIN'];
   for (const r of roles) {
     await prisma.role.upsert({

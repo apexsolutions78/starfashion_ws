@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { Package, Eye, X, Check, AlertTriangle, Clock, Edit2, Save } from 'lucide-react';
+import { usePermissions, HasPermission } from '@/lib/permissions-context';
 
 export default function AdminOrdersPage() {
+  const { hasPermission } = usePermissions();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -182,12 +184,14 @@ export default function AdminOrdersPage() {
           <h1 className="text-2xl font-bold text-white tracking-tight">Order Processing Queue</h1>
           <p className="text-slate-400 text-xs mt-1">Review orders, adjust quantities, set hold periods, and send to customers.</p>
         </div>
-        <button
-          onClick={handleRunAutoCancel}
-          className="bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 text-xs font-bold px-4 py-2 rounded-xl transition-all"
-        >
-          Run Auto-Cancel Expired
-        </button>
+        <HasPermission permission="orders:process">
+          <button
+            onClick={handleRunAutoCancel}
+            className="bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 text-xs font-bold px-4 py-2 rounded-xl transition-all"
+          >
+            Run Auto-Cancel Expired
+          </button>
+        </HasPermission>
       </div>
 
       <div className="space-y-4">
@@ -218,42 +222,50 @@ export default function AdminOrdersPage() {
                   <div className="text-lg font-extrabold text-emerald-400">Rs.{order.grandTotal.toFixed(2)}</div>
                 </div>
 
-                <button
-                  onClick={() => handleViewOrder(order.id)}
-                  className="bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs px-3 py-2 rounded-xl transition-all flex items-center space-x-1"
-                >
-                  <Eye className="w-4 h-4" />
-                  <span>View</span>
-                </button>
+                <HasPermission permission="orders:read">
+                  <button
+                    onClick={() => handleViewOrder(order.id)}
+                    className="bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs px-3 py-2 rounded-xl transition-all flex items-center space-x-1"
+                  >
+                    <Eye className="w-4 h-4" />
+                    <span>View</span>
+                  </button>
+                </HasPermission>
 
                 {order.status === 'SUBMITTED' && (
-                  <button
-                    onClick={() => handleReviewOrder(order.id)}
-                    className="bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs px-3 py-2 rounded-xl transition-all flex items-center space-x-1"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                    <span>Review</span>
-                  </button>
+                  <HasPermission permission="orders:process">
+                    <button
+                      onClick={() => handleReviewOrder(order.id)}
+                      className="bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs px-3 py-2 rounded-xl transition-all flex items-center space-x-1"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                      <span>Review</span>
+                    </button>
+                  </HasPermission>
                 )}
 
                 {order.status === 'SUBMITTED' && (
-                  <button
-                    onClick={() => handleUpdateStatus(order.id, 'CANCELLED')}
-                    disabled={processingId === order.id}
-                    className="bg-red-600 hover:bg-red-500 text-white font-bold text-xs px-3 py-2 rounded-xl transition-all disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
+                  <HasPermission permission="orders:process">
+                    <button
+                      onClick={() => handleUpdateStatus(order.id, 'CANCELLED')}
+                      disabled={processingId === order.id}
+                      className="bg-red-600 hover:bg-red-500 text-white font-bold text-xs px-3 py-2 rounded-xl transition-all disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                  </HasPermission>
                 )}
 
                 {order.status === 'CONFIRMED' && (
-                  <button
-                    onClick={() => handleUpdateStatus(order.id, 'PROCESSING')}
-                    disabled={processingId === order.id}
-                    className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-3 py-2 rounded-xl transition-all disabled:opacity-50"
-                  >
-                    {processingId === order.id ? '...' : 'Ship'}
-                  </button>
+                  <HasPermission permission="orders:process">
+                    <button
+                      onClick={() => handleUpdateStatus(order.id, 'PROCESSING')}
+                      disabled={processingId === order.id}
+                      className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-3 py-2 rounded-xl transition-all disabled:opacity-50"
+                    >
+                      {processingId === order.id ? '...' : 'Ship'}
+                    </button>
+                  </HasPermission>
                 )}
               </div>
             </div>
@@ -312,7 +324,9 @@ export default function AdminOrdersPage() {
             <div className="p-5 border-t border-slate-800 flex justify-end space-x-3">
               <button onClick={() => setShowOrderDetail(false)} className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-medium">Close</button>
               {selectedOrder.status === 'SUBMITTED' && (
-                <button onClick={() => { setShowOrderDetail(false); handleReviewOrder(selectedOrder.id); }} className="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-medium">Review & Edit</button>
+                <HasPermission permission="orders:process">
+                  <button onClick={() => { setShowOrderDetail(false); handleReviewOrder(selectedOrder.id); }} className="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-medium">Review & Edit</button>
+                </HasPermission>
               )}
             </div>
           </div>
@@ -411,14 +425,16 @@ export default function AdminOrdersPage() {
 
             <div className="p-5 border-t border-slate-800 flex justify-end space-x-3">
               <button onClick={() => setShowReviewModal(false)} className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-medium">Cancel</button>
-              <button
-                onClick={handleSubmitReview}
-                disabled={reviewing}
-                className="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 disabled:opacity-50"
-              >
-                <Save className="w-4 h-4" />
-                <span>{reviewing ? 'Sending...' : 'Send to Customer'}</span>
-              </button>
+              <HasPermission permission="orders:process">
+                <button
+                  onClick={handleSubmitReview}
+                  disabled={reviewing}
+                  className="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{reviewing ? 'Sending...' : 'Send to Customer'}</span>
+                </button>
+              </HasPermission>
             </div>
           </div>
         </div>

@@ -131,7 +131,7 @@ export default function SalesUserDetailPage({ params }: { params: Promise<{ id: 
     try {
       const res = await fetch(`/api/v1/admin/sales/${id}/permissions`);
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.data.permissions) {
         setPermissions(data.data.permissions);
       }
     } catch (error) {

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Truck, Printer, CheckCircle, Eye, X, MapPin, Phone, User, Package } from 'lucide-react';
+import { usePermissions, HasPermission } from '@/lib/permissions-context';
 
 export default function AdminDispatchPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -9,6 +10,7 @@ export default function AdminDispatchPage() {
   const [dispatchingId, setDispatchingId] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [showDetail, setShowDetail] = useState(false);
+  const { hasPermission } = usePermissions();
 
   const fetchOrders = () => {
     setLoading(true);
@@ -213,22 +215,26 @@ export default function AdminDispatchPage() {
                       <span>View</span>
                     </button>
 
-                    <button
-                      onClick={() => handlePrint(order)}
-                      className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-3 py-2 rounded-xl transition-all flex items-center space-x-1"
-                    >
-                      <Printer className="w-4 h-4" />
-                      <span>Print</span>
-                    </button>
+                    <HasPermission permission="orders:dispatch">
+                      <button
+                        onClick={() => handlePrint(order)}
+                        className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-3 py-2 rounded-xl transition-all flex items-center space-x-1"
+                      >
+                        <Printer className="w-4 h-4" />
+                        <span>Print</span>
+                      </button>
+                    </HasPermission>
 
-                    <button
-                      onClick={() => handleDispatch(order.id)}
-                      disabled={dispatchingId === order.id}
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3 py-2 rounded-xl transition-all flex items-center space-x-1 disabled:opacity-50"
-                    >
-                      <Truck className="w-4 h-4" />
-                      <span>{dispatchingId === order.id ? '...' : 'Dispatch'}</span>
-                    </button>
+                    <HasPermission permission="orders:dispatch">
+                      <button
+                        onClick={() => handleDispatch(order.id)}
+                        disabled={dispatchingId === order.id}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3 py-2 rounded-xl transition-all flex items-center space-x-1 disabled:opacity-50"
+                      >
+                        <Truck className="w-4 h-4" />
+                        <span>{dispatchingId === order.id ? '...' : 'Dispatch'}</span>
+                      </button>
+                    </HasPermission>
                   </div>
                 </div>
               </div>
@@ -321,8 +327,12 @@ export default function AdminDispatchPage() {
 
               <div className="p-5 border-t border-slate-800 flex justify-end space-x-3">
                 <button onClick={() => setShowDetail(false)} className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-medium">Close</button>
-                <button onClick={() => { setShowDetail(false); handlePrint(selectedOrder); }} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2"><Printer className="w-4 h-4" /><span>Print</span></button>
-                <button onClick={() => handleDispatch(selectedOrder.id)} disabled={dispatchingId === selectedOrder.id} className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 disabled:opacity-50"><Truck className="w-4 h-4" /><span>{dispatchingId === selectedOrder.id ? 'Dispatching...' : 'Mark Dispatched'}</span></button>
+                <HasPermission permission="orders:dispatch">
+                  <button onClick={() => { setShowDetail(false); handlePrint(selectedOrder); }} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2"><Printer className="w-4 h-4" /><span>Print</span></button>
+                </HasPermission>
+                <HasPermission permission="orders:dispatch">
+                  <button onClick={() => handleDispatch(selectedOrder.id)} disabled={dispatchingId === selectedOrder.id} className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 disabled:opacity-50"><Truck className="w-4 h-4" /><span>{dispatchingId === selectedOrder.id ? 'Dispatching...' : 'Mark Dispatched'}</span></button>
+                </HasPermission>
               </div>
             </div>
           </div>

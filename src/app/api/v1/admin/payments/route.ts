@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { getAuthSession } from '@/lib/middleware-auth';
+import { requirePermission, PERMISSIONS } from '@/lib/permissions';
 import { ApiUtils } from '@/lib/api-response';
 import { PaymentService } from '@/services/PaymentService';
 import { prisma } from '@/lib/db';
@@ -13,11 +13,9 @@ const recordPaymentSchema = z.object({
   notes: z.string().optional(),
 });
 
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession(req);
-  if (!session || session.userType !== 'ADMIN') {
-    return ApiUtils.forbidden('Admin authorization required');
-  }
+export async function GET(request: NextRequest) {
+  const auth = await requirePermission(request, PERMISSIONS.PAYMENTS_READ);
+  if (!auth) return ApiUtils.forbidden();
 
   const payments = await prisma.payment.findMany({
     include: {
@@ -30,14 +28,12 @@ export async function GET(req: NextRequest) {
   return ApiUtils.success(payments);
 }
 
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession(req);
-  if (!session || session.userType !== 'ADMIN') {
-    return ApiUtils.forbidden('Admin authorization required');
-  }
+export async function POST(request: NextRequest) {
+  const auth = await requirePermission(request, PERMISSIONS.PAYMENTS_RECORD);
+  if (!auth) return ApiUtils.forbidden();
 
   try {
-    const body = await req.json();
+    const body = await request.json();
     const parsed = recordPaymentSchema.parse(body);
 
     const payment = await PaymentService.recordPayment({
@@ -46,7 +42,7 @@ export async function POST(req: NextRequest) {
       paymentMethod: parsed.paymentMethod,
       referenceNumber: parsed.referenceNumber,
       notes: parsed.notes,
-      recordedByUserId: session.userId,
+      recordedByUserId: auth.session.userId,
     });
 
     return ApiUtils.success(payment, 'Payment recorded successfully', 201);

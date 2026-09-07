@@ -2,7 +2,7 @@ export interface PricingItemInput {
   variantId: string;
   sku?: string;
   articleNumber?: string;
-  productName?: string;
+  productName?: string | null;
   colorName?: string;
   sizeName?: string;
   baseUnitPrice: number;
@@ -22,7 +22,7 @@ export interface LineItemQuote {
   variantId: string;
   sku?: string;
   articleNumber?: string;
-  productName?: string;
+  productName?: string | null;
   colorName?: string;
   sizeName?: string;
   baseUnitPrice: number;

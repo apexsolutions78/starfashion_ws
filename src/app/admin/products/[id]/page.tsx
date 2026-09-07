@@ -6,7 +6,7 @@ import { Save, ArrowLeft, Upload, X, Plus, Trash2, Image as ImageIcon, FolderOpe
 import Link from 'next/link';
 
 const MAX_PIXELS = 5 * 1024 * 1024; // 5 megapixels
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
 const MAX_FILES = 10;
 
@@ -100,12 +100,23 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
   const [articleNumber, setArticleNumber] = useState('');
   const [name, setName] = useState('');
-  const [slug, setSlug] = useState('');
   const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [collectionId, setCollectionId] = useState('');
   const [basePrice, setBasePrice] = useState('');
   const [active, setActive] = useState(true);
+  const [shirtStyle, setShirtStyle] = useState('');
+  const [dupattaStyle, setDupattaStyle] = useState('');
+  const [trouserStyle, setTrouserStyle] = useState('');
+
+  // Inline management state
+  const [showCategoryInput, setShowCategoryInput] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [showCollectionInput, setShowCollectionInput] = useState(false);
+  const [newCollectionName, setNewCollectionName] = useState('');
+  const [showColorForm, setShowColorForm] = useState(false);
+  const [newColorName, setNewColorName] = useState('');
+  const [newColorHex, setNewColorHex] = useState('#000000');
 
   const [variants, setVariants] = useState<any[]>([]);
   const [images, setImages] = useState<any[]>([]);
@@ -149,11 +160,13 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         setProduct(p);
         setArticleNumber(p.articleNumber);
         setName(p.name);
-        setSlug(p.slug);
         setDescription(p.description || '');
         setCategoryId(p.categoryId);
         setCollectionId(p.collectionId || '');
         setBasePrice(p.basePrice.toString());
+        setShirtStyle(p.shirtStyle || '');
+        setDupattaStyle(p.dupattaStyle || '');
+        setTrouserStyle(p.trouserStyle || '');
         setActive(p.active);
         setVariants(p.variants || []);
         setImages(p.images || []);
@@ -170,10 +183,12 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   };
 
   const handleSave = async () => {
-    if (!articleNumber || !name || !slug || !categoryId || !basePrice) {
+    if (!articleNumber || !categoryId || !basePrice) {
       alert('Please fill in all required fields');
       return;
     }
+
+    const slug = articleNumber.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
     setSaving(true);
     try {
@@ -182,9 +197,12 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           articleNumber,
-          name,
+          name: name || null,
           slug,
-          description,
+          description: description || null,
+          shirtStyle: shirtStyle || null,
+          dupattaStyle: dupattaStyle || null,
+          trouserStyle: trouserStyle || null,
           categoryId,
           collectionId: collectionId || null,
           basePrice: parseFloat(basePrice),
@@ -350,13 +368,6 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     })));
   };
 
-  const generateSlug = (productName: string) => {
-    return productName
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -433,29 +444,13 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-2">Product Name *</label>
+                <label className="block text-xs font-medium text-slate-300 mb-2">Product Name</label>
                 <input
                   type="text"
                   value={name}
-                  onChange={(e) => {
-                    setName(e.target.value);
-                    if (!slug || slug === generateSlug(name)) {
-                      setSlug(generateSlug(e.target.value));
-                    }
-                  }}
+                  onChange={(e) => setName(e.target.value)}
                   className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-4 py-2 text-slate-100 text-sm focus:outline-none focus:border-emerald-500"
                   placeholder="Product name"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-2">Slug *</label>
-                <input
-                  type="text"
-                  value={slug}
-                  onChange={(e) => setSlug(e.target.value)}
-                  className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-4 py-2 text-slate-100 text-sm focus:outline-none focus:border-emerald-500"
-                  placeholder="product-slug"
                 />
               </div>
 
@@ -470,9 +465,141 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 />
               </div>
 
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-2">Shirt Style & Material</label>
+                  <input
+                    type="text"
+                    value={shirtStyle}
+                    onChange={(e) => setShirtStyle(e.target.value)}
+                    className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-4 py-2 text-slate-100 text-sm focus:outline-none focus:border-emerald-500"
+                    placeholder="e.g. Cotton Kurta"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-2">Dupatta Style & Material</label>
+                  <input
+                    type="text"
+                    value={dupattaStyle}
+                    onChange={(e) => setDupattaStyle(e.target.value)}
+                    className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-4 py-2 text-slate-100 text-sm focus:outline-none focus:border-emerald-500"
+                    placeholder="e.g. Chiffon Dupatta"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-2">Trouser Style & Material</label>
+                  <input
+                    type="text"
+                    value={trouserStyle}
+                    onChange={(e) => setTrouserStyle(e.target.value)}
+                    className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-4 py-2 text-slate-100 text-sm focus:outline-none focus:border-emerald-500"
+                    placeholder="e.g. Cambric Trouser"
+                  />
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-2">Category *</label>
+                  <div className="flex items-center space-x-2 mb-2">
+                    <label className="text-xs font-medium text-slate-300">Category *</label>
+                    <button
+                      type="button"
+                      onClick={() => setShowCategoryInput(!showCategoryInput)}
+                      className="text-emerald-400 hover:text-emerald-300 text-[10px] font-medium bg-emerald-500/10 px-1.5 py-0.5 rounded"
+                    >
+                      + Add
+                    </button>
+                    {categoryId && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!confirm('Delete this category?')) return;
+                          try {
+                            const res = await fetch(`/api/v1/admin/categories?id=${categoryId}`, { method: 'DELETE' });
+                            const data = await res.json();
+                            if (data.success) {
+                              setCategories(categories.filter(c => c.id !== categoryId));
+                              setCategoryId('');
+                            } else {
+                              alert(data.error || 'Failed to delete category');
+                            }
+                          } catch (error) {
+                            alert('Failed to delete category');
+                          }
+                        }}
+                        className="text-red-400 hover:text-red-300 text-[10px] font-medium bg-red-500/10 px-1.5 py-0.5 rounded"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                  {showCategoryInput && (
+                    <div className="flex space-x-2 mb-2">
+                      <input
+                        type="text"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        className="flex-1 bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:outline-none focus:border-emerald-500"
+                        placeholder="Category name"
+                        onKeyDown={async (e) => {
+                          if (e.key === 'Enter' && newCategoryName.trim()) {
+                            try {
+                              const res = await fetch('/api/v1/admin/categories', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ name: newCategoryName.trim() }),
+                              });
+                              const data = await res.json();
+                              if (data.success) {
+                                setCategories([...categories, data.data]);
+                                setCategoryId(data.data.id);
+                                setNewCategoryName('');
+                                setShowCategoryInput(false);
+                              } else {
+                                alert(data.error || 'Failed to add category');
+                              }
+                            } catch (error) {
+                              alert('Failed to add category');
+                            }
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!newCategoryName.trim()) return;
+                          try {
+                            const res = await fetch('/api/v1/admin/categories', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ name: newCategoryName.trim() }),
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                              setCategories([...categories, data.data]);
+                              setCategoryId(data.data.id);
+                              setNewCategoryName('');
+                              setShowCategoryInput(false);
+                            } else {
+                              alert(data.error || 'Failed to add category');
+                            }
+                          } catch (error) {
+                            alert('Failed to add category');
+                          }
+                        }}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-sm"
+                      >
+                        Add
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setShowCategoryInput(false); setNewCategoryName(''); }}
+                        className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-sm"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
                   <select
                     value={categoryId}
                     onChange={(e) => setCategoryId(e.target.value)}
@@ -485,7 +612,106 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-2">Collection</label>
+                  <div className="flex items-center space-x-2 mb-2">
+                    <label className="text-xs font-medium text-slate-300">Collection</label>
+                    <button
+                      type="button"
+                      onClick={() => setShowCollectionInput(!showCollectionInput)}
+                      className="text-emerald-400 hover:text-emerald-300 text-[10px] font-medium bg-emerald-500/10 px-1.5 py-0.5 rounded"
+                    >
+                      + Add
+                    </button>
+                    {collectionId && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!confirm('Delete this collection?')) return;
+                          try {
+                            const res = await fetch(`/api/v1/admin/collections?id=${collectionId}`, { method: 'DELETE' });
+                            const data = await res.json();
+                            if (data.success) {
+                              setCollections(collections.filter(c => c.id !== collectionId));
+                              setCollectionId('');
+                            } else {
+                              alert(data.error || 'Failed to delete collection');
+                            }
+                          } catch (error) {
+                            alert('Failed to delete collection');
+                          }
+                        }}
+                        className="text-red-400 hover:text-red-300 text-[10px] font-medium bg-red-500/10 px-1.5 py-0.5 rounded"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                  {showCollectionInput && (
+                    <div className="flex space-x-2 mb-2">
+                      <input
+                        type="text"
+                        value={newCollectionName}
+                        onChange={(e) => setNewCollectionName(e.target.value)}
+                        className="flex-1 bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:outline-none focus:border-emerald-500"
+                        placeholder="Collection name"
+                        onKeyDown={async (e) => {
+                          if (e.key === 'Enter' && newCollectionName.trim()) {
+                            try {
+                              const res = await fetch('/api/v1/admin/collections', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ name: newCollectionName.trim() }),
+                              });
+                              const data = await res.json();
+                              if (data.success) {
+                                setCollections([...collections, data.data]);
+                                setCollectionId(data.data.id);
+                                setNewCollectionName('');
+                                setShowCollectionInput(false);
+                              } else {
+                                alert(data.error || 'Failed to add collection');
+                              }
+                            } catch (error) {
+                              alert('Failed to add collection');
+                            }
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!newCollectionName.trim()) return;
+                          try {
+                            const res = await fetch('/api/v1/admin/collections', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ name: newCollectionName.trim() }),
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                              setCollections([...collections, data.data]);
+                              setCollectionId(data.data.id);
+                              setNewCollectionName('');
+                              setShowCollectionInput(false);
+                            } else {
+                              alert(data.error || 'Failed to add collection');
+                            }
+                          } catch (error) {
+                            alert('Failed to add collection');
+                          }
+                        }}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-sm"
+                      >
+                        Add
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setShowCollectionInput(false); setNewCollectionName(''); }}
+                        className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-sm"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
                   <select
                     value={collectionId}
                     onChange={(e) => setCollectionId(e.target.value)}
@@ -581,6 +807,137 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
         {/* Sidebar */}
         <div className="space-y-6">
+          {/* Colors */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white">Colors</h2>
+              <button
+                type="button"
+                onClick={() => setShowColorForm(!showColorForm)}
+                className="text-emerald-400 hover:text-emerald-300 text-xs font-medium bg-emerald-500/10 px-2 py-1 rounded"
+              >
+                + Add Color
+              </button>
+            </div>
+
+            {showColorForm && (
+              <div className="bg-slate-950/50 border border-slate-800 rounded-lg p-3 mb-4">
+                <div className="flex items-center space-x-3 mb-3">
+                  <input
+                    type="color"
+                    value={newColorHex}
+                    onChange={(e) => setNewColorHex(e.target.value)}
+                    className="w-10 h-10 rounded-lg border border-slate-700 cursor-pointer bg-transparent"
+                  />
+                  <input
+                    type="text"
+                    value={newColorName}
+                    onChange={(e) => setNewColorName(e.target.value)}
+                    className="flex-1 bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:border-emerald-500"
+                    placeholder="Color name"
+                    onKeyDown={async (e) => {
+                      if (e.key === 'Enter' && newColorName.trim()) {
+                        try {
+                          const res = await fetch('/api/v1/admin/colors', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ name: newColorName.trim(), hexCode: newColorHex }),
+                          });
+                          const data = await res.json();
+                          if (data.success) {
+                            setColors([...colors, data.data]);
+                            setNewColorName('');
+                            setNewColorHex('#000000');
+                            setShowColorForm(false);
+                          } else {
+                            alert(data.error || 'Failed to add color');
+                          }
+                        } catch (error) {
+                          alert('Failed to add color');
+                        }
+                      }
+                    }}
+                  />
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!newColorName.trim()) return;
+                      try {
+                        const res = await fetch('/api/v1/admin/colors', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ name: newColorName.trim(), hexCode: newColorHex }),
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                          setColors([...colors, data.data]);
+                          setNewColorName('');
+                          setNewColorHex('#000000');
+                          setShowColorForm(false);
+                        } else {
+                          alert(data.error || 'Failed to add color');
+                        }
+                      } catch (error) {
+                        alert('Failed to add color');
+                      }
+                    }}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Add
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShowColorForm(false); setNewColorName(''); setNewColorHex('#000000'); }}
+                    className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {colors.length === 0 ? (
+              <p className="text-slate-500 text-sm">No colors yet</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {colors.map((color) => (
+                  <div key={color.id} className="group relative">
+                    <div
+                      className="w-10 h-10 rounded-lg border-2 border-slate-700 cursor-default shadow-sm"
+                      style={{ backgroundColor: color.hexCode }}
+                      title={color.name}
+                    />
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!confirm(`Delete color "${color.name}"?`)) return;
+                        try {
+                          const res = await fetch(`/api/v1/admin/colors?id=${color.id}`, { method: 'DELETE' });
+                          const data = await res.json();
+                          if (data.success) {
+                            setColors(colors.filter(c => c.id !== color.id));
+                            if (selectedColorId === color.id) setSelectedColorId('');
+                          } else {
+                            alert(data.error || 'Failed to delete color');
+                          }
+                        } catch (error) {
+                          alert('Failed to delete color');
+                        }
+                      }}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 hover:bg-red-400 text-white rounded-full flex items-center justify-center text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                      title="Delete color"
+                    >
+                      ×
+                    </button>
+                    <p className="text-[10px] text-slate-400 text-center mt-1 truncate max-w-[40px]">{color.name}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Images */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
             <h2 className="text-lg font-semibold text-white mb-2">Product Images</h2>
@@ -593,7 +950,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                   <p className="font-medium mb-1">Image Requirements:</p>
                   <ul className="space-y-0.5 text-amber-200/80">
                     <li>• Format: <strong>JPEG (.jpg)</strong> or <strong>PNG (.png)</strong> only</li>
-                    <li>• Maximum size: <strong>5MB per image</strong></li>
+                    <li>• Maximum size: <strong>3MB per image</strong></li>
                     <li>• Maximum resolution: <strong>5 megapixels</strong></li>
                     <li>• Maximum files: <strong>10 per upload</strong></li>
                   </ul>
@@ -654,7 +1011,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                       <span>Browse Files</span>
                     </button>
                     <p className="text-slate-500 text-xs mt-3">
-                      Select JPEG or PNG images (max 5MB each)
+                      Select JPEG or PNG images (max 3MB each)
                     </p>
                   </>
                 )}
@@ -791,7 +1148,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 <span className="text-amber-400 font-medium">Images Exceed Size Limits</span>
               </div>
               <p className="text-slate-300 text-sm mb-3">
-                The following images exceed the maximum allowed size (5MB or 5 megapixels):
+                The following images exceed the maximum allowed size (3MB or 5 megapixels):
               </p>
 
               <div className="bg-slate-950/50 rounded-lg p-3 mb-4 max-h-48 overflow-y-auto">

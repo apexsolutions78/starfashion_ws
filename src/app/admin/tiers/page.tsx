@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { Sliders, Save, CheckCircle2, ShieldAlert, Plus, Trash2 } from 'lucide-react';
+import { usePermissions, HasPermission } from '@/lib/permissions-context';
 
 export default function AdminTiersPage() {
   const [tiers, setTiers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const { hasPermission } = usePermissions();
 
   useEffect(() => {
     fetch('/api/v1/admin/pricing-tiers')
@@ -74,14 +76,16 @@ export default function AdminTiersPage() {
           </p>
         </div>
 
-        <button
-          onClick={handleSaveTiers}
-          disabled={saving}
-          className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-6 py-3 rounded-xl shadow-lg shadow-emerald-600/30 flex items-center space-x-2 transition-all disabled:opacity-50"
-        >
-          <Save className="w-4 h-4" />
-          <span>{saving ? 'Saving...' : 'Save & Log Changes'}</span>
-        </button>
+        <HasPermission permission="tiers:manage">
+          <button
+            onClick={handleSaveTiers}
+            disabled={saving}
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-6 py-3 rounded-xl shadow-lg shadow-emerald-600/30 flex items-center space-x-2 transition-all disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" />
+            <span>{saving ? 'Saving...' : 'Save & Log Changes'}</span>
+          </button>
+        </HasPermission>
       </div>
 
       {message && (
@@ -152,13 +156,15 @@ export default function AdminTiersPage() {
         ))}
       </div>
 
-      <button
-        onClick={handleAddTier}
-        className="w-full py-4 border-2 border-dashed border-slate-800 hover:border-slate-700 rounded-2xl text-xs font-bold text-slate-400 hover:text-white flex items-center justify-center space-x-2 transition-colors"
-      >
-        <Plus className="w-4 h-4" />
-        <span>Add New Pricing Tier</span>
-      </button>
+      <HasPermission permission="tiers:manage">
+        <button
+          onClick={handleAddTier}
+          className="w-full py-4 border-2 border-dashed border-slate-800 hover:border-slate-700 rounded-2xl text-xs font-bold text-slate-400 hover:text-white flex items-center justify-center space-x-2 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Add New Pricing Tier</span>
+        </button>
+      </HasPermission>
     </div>
   );
 }

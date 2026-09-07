@@ -2,13 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getAuthSession } from '@/lib/middleware-auth';
 import { ApiUtils } from '@/lib/api-response';
+import { requirePermission, PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 
 const createProductSchema = z.object({
   articleNumber: z.string().min(1, 'Article number is required'),
-  name: z.string().min(1, 'Product name is required'),
+  name: z.string().optional(),
   slug: z.string().min(1, 'Slug is required'),
   description: z.string().optional(),
+  shirtStyle: z.string().optional(),
+  dupattaStyle: z.string().optional(),
+  trouserStyle: z.string().optional(),
   categoryId: z.string().min(1, 'Category is required'),
   collectionId: z.string().optional(),
   basePrice: z.number().positive('Base price must be positive'),
@@ -27,10 +31,8 @@ const createProductSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getAuthSession(request);
-    if (!session || session.userType !== 'ADMIN') {
-      return ApiUtils.forbidden();
-    }
+    const auth = await requirePermission(request, PERMISSIONS.CATALOG_READ);
+    if (!auth) return ApiUtils.forbidden();
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('q') || '';
@@ -105,10 +107,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getAuthSession(request);
-    if (!session || session.userType !== 'ADMIN') {
-      return ApiUtils.forbidden();
-    }
+    const auth = await requirePermission(request, PERMISSIONS.CATALOG_WRITE);
+    if (!auth) return ApiUtils.forbidden();
 
     const body = await request.json();
     const result = createProductSchema.safeParse(body);

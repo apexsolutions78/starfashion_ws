@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
-import { getAuthSession } from '@/lib/middleware-auth';
+import { requirePermission, PERMISSIONS } from '@/lib/permissions';
 import { ApiUtils } from '@/lib/api-response';
 
 // Approve a customer
@@ -9,14 +9,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getAuthSession(request);
-    if (!session) {
-      return ApiUtils.unauthorized();
-    }
-
-    // Only MASTER_ADMIN can approve
-    if (session.userType !== 'ADMIN' || session.role !== 'MASTER_ADMIN') {
-      return ApiUtils.forbidden('Only Master Admin can approve customers');
+    const auth = await requirePermission(request, PERMISSIONS.CUSTOMERS_MANAGE);
+    if (!auth) return ApiUtils.forbidden();
+    if (auth.userRole !== 'MASTER_ADMIN') {
+      return ApiUtils.forbidden('Only Master Admin can approve/reject customers');
     }
 
     const { id } = await params;
@@ -43,7 +39,7 @@ export async function POST(
     const updateData: any = {
       onboardingStatus: 'APPROVED',
       approvedAt: new Date(),
-      approvedByUserId: session.userId,
+      approvedByUserId: auth.session.userId,
       creditLimit: creditLimit || 0,
       minOrderQty: minOrderQty || 30,
     };
@@ -79,14 +75,10 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getAuthSession(request);
-    if (!session) {
-      return ApiUtils.unauthorized();
-    }
-
-    // Only MASTER_ADMIN can reject
-    if (session.userType !== 'ADMIN' || session.role !== 'MASTER_ADMIN') {
-      return ApiUtils.forbidden('Only Master Admin can reject customers');
+    const auth = await requirePermission(request, PERMISSIONS.CUSTOMERS_MANAGE);
+    if (!auth) return ApiUtils.forbidden();
+    if (auth.userRole !== 'MASTER_ADMIN') {
+      return ApiUtils.forbidden('Only Master Admin can approve/reject customers');
     }
 
     const { id } = await params;

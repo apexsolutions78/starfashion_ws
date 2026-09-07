@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { getAuthSession } from '@/lib/middleware-auth';
+import { requirePermission, PERMISSIONS } from '@/lib/permissions';
 import { ApiUtils } from '@/lib/api-response';
 import { z } from 'zod';
 
 const updateProductSchema = z.object({
   articleNumber: z.string().min(1).optional(),
-  name: z.string().min(1).optional(),
+  name: z.string().optional(),
   slug: z.string().min(1).optional(),
   description: z.string().optional(),
+  shirtStyle: z.string().optional(),
+  dupattaStyle: z.string().optional(),
+  trouserStyle: z.string().optional(),
   categoryId: z.string().min(1).optional(),
   collectionId: z.string().optional(),
   basePrice: z.number().positive().optional(),
@@ -20,10 +23,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getAuthSession(request);
-    if (!session || session.userType !== 'ADMIN') {
-      return ApiUtils.forbidden();
-    }
+    const auth = await requirePermission(request, PERMISSIONS.CATALOG_READ);
+    if (!auth) return ApiUtils.forbidden();
 
     const { id } = await params;
 
@@ -79,10 +80,8 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getAuthSession(request);
-    if (!session || session.userType !== 'ADMIN') {
-      return ApiUtils.forbidden();
-    }
+    const auth = await requirePermission(request, PERMISSIONS.CATALOG_WRITE);
+    if (!auth) return ApiUtils.forbidden();
 
     const { id } = await params;
     const body = await request.json();
@@ -132,10 +131,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getAuthSession(request);
-    if (!session || session.userType !== 'ADMIN') {
-      return ApiUtils.forbidden();
-    }
+    const auth = await requirePermission(request, PERMISSIONS.CATALOG_WRITE);
+    if (!auth) return ApiUtils.forbidden();
 
     const { id } = await params;
 

@@ -1,13 +1,13 @@
 import { NextRequest } from 'next/server';
-import { getAuthSession } from '@/lib/middleware-auth';
+import { requirePermission, PERMISSIONS } from '@/lib/permissions';
 import { ApiUtils } from '@/lib/api-response';
 import { prisma } from '@/lib/db';
 
 // GET counts for sidebar badges
 export async function GET(request: NextRequest) {
   try {
-    const session = await getAuthSession(request);
-    if (!session) return ApiUtils.unauthorized();
+    const auth = await requirePermission(request, PERMISSIONS.REPORTS_READ);
+    if (!auth) return ApiUtils.forbidden();
 
     const [
       newOrders,

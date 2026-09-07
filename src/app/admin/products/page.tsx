@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Plus, Search, Edit2, Trash2, Package, Image as ImageIcon, Download, Upload, FileText, X, CheckCircle, AlertCircle, FolderPlus, Palette, Ruler, Layers } from 'lucide-react';
+import { usePermissions, HasPermission } from '@/lib/permissions-context';
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -24,6 +25,7 @@ export default function AdminProductsPage() {
   }>({ categories: [], colors: [], sizes: [], collections: [] });
   const [confirmationStatus, setConfirmationStatus] = useState<'pending' | 'confirmed' | 'rejected' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { hasPermission } = usePermissions();
 
   useEffect(() => {
     fetchProducts();
@@ -247,13 +249,15 @@ export default function AdminProductsPage() {
             <Upload className="w-4 h-4" />
             <span>Import CSV</span>
           </button>
-          <Link
-            href="/admin/products/new"
-            className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Product</span>
-          </Link>
+          <HasPermission permission="catalog:write">
+            <Link
+              href="/admin/products/new"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Product</span>
+            </Link>
+          </HasPermission>
         </div>
       </div>
 
@@ -359,20 +363,24 @@ export default function AdminProductsPage() {
 
                   <div className="flex items-center justify-between pt-3 border-t border-slate-800">
                     <div className="flex space-x-2">
-                      <Link
-                        href={`/admin/products/${product.id}`}
-                        className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
-                        title="Edit"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </Link>
-                      <button
-                        onClick={() => setDeleteModal(product.id)}
-                        className="text-slate-400 hover:text-red-400 p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <HasPermission permission="catalog:write">
+                        <Link
+                          href={`/admin/products/${product.id}`}
+                          className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
+                          title="Edit"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Link>
+                      </HasPermission>
+                      <HasPermission permission="catalog:write">
+                        <button
+                          onClick={() => setDeleteModal(product.id)}
+                          className="text-slate-400 hover:text-red-400 p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </HasPermission>
                     </div>
                     <Link
                       href={`/admin/products/${product.id}`}

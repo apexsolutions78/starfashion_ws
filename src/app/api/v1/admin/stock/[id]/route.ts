@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { getAuthSession } from '@/lib/middleware-auth';
+import { requirePermission, PERMISSIONS } from '@/lib/permissions';
 import { ApiUtils } from '@/lib/api-response';
 import { prisma } from '@/lib/db';
 
@@ -9,9 +9,8 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getAuthSession(request);
-    if (!session) return ApiUtils.unauthorized();
-    if (session.userType !== 'ADMIN') return ApiUtils.forbidden('Only admins can update stock');
+    const auth = await requirePermission(request, PERMISSIONS.STOCK_MANAGE);
+    if (!auth) return ApiUtils.forbidden();
 
     const { id } = await params;
     const body = await request.json();
@@ -84,8 +83,8 @@ export async function PATCH(
       // Audit log
       await prisma.auditLog.create({
         data: {
-          actorId: session.userId,
-          actorEmail: session.email,
+          actorId: auth.session.userId,
+          actorEmail: auth.session.email,
           action: 'STOCK_ADDED',
           entityType: 'Inventory',
           entityId: inventory.id,

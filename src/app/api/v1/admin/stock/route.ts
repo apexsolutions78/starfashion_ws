@@ -1,13 +1,13 @@
 import { NextRequest } from 'next/server';
-import { getAuthSession } from '@/lib/middleware-auth';
+import { requirePermission, PERMISSIONS } from '@/lib/permissions';
 import { ApiUtils } from '@/lib/api-response';
 import { prisma } from '@/lib/db';
 
 // GET all variants with stock info (searchable)
 export async function GET(request: NextRequest) {
   try {
-    const session = await getAuthSession(request);
-    if (!session) return ApiUtils.unauthorized();
+    const auth = await requirePermission(request, PERMISSIONS.STOCK_READ);
+    if (!auth) return ApiUtils.forbidden();
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';

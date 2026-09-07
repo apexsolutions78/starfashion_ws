@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { getAuthSession } from '@/lib/middleware-auth';
+import { requirePermission, PERMISSIONS } from '@/lib/permissions';
 import { ApiUtils } from '@/lib/api-response';
 import { OrderService } from '@/services/OrderService';
 import { z } from 'zod';
@@ -18,10 +18,8 @@ const updateStatusSchema = z.object({
 });
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getAuthSession(req);
-  if (!session || session.userType !== 'ADMIN') {
-    return ApiUtils.forbidden('Admin authorization required');
-  }
+  const auth = await requirePermission(req, PERMISSIONS.ORDERS_PROCESS);
+  if (!auth) return ApiUtils.forbidden();
 
   try {
     const { id } = await params;
@@ -31,7 +29,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const updatedOrder = await OrderService.updateOrderStatus(
       id,
       parsed.status,
-      session.userId
+      auth.session.userId
     );
 
     return ApiUtils.success(updatedOrder, 'Order status updated successfully');

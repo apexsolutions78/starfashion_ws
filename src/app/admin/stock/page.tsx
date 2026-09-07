@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { Package, Search, Plus, Calendar, Factory, AlertTriangle, CheckCircle, X, Save, ArrowUpDown } from 'lucide-react';
+import { usePermissions, HasPermission } from '@/lib/permissions-context';
 
 export default function AdminStockPage() {
+  const { hasPermission } = usePermissions();
   const [variants, setVariants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -165,13 +167,15 @@ export default function AdminStockPage() {
           <h1 className="text-2xl font-bold text-white tracking-tight">New Stock</h1>
           <p className="text-slate-400 text-xs mt-1">Manage stock levels, mark articles in production, and set estimated availability dates.</p>
         </div>
-        <button
-          onClick={() => setShowBulkModal(true)}
-          className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all flex items-center space-x-2"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Bulk Add Stock</span>
-        </button>
+        <HasPermission permission="stock:manage">
+          <button
+            onClick={() => setShowBulkModal(true)}
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all flex items-center space-x-2"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Bulk Add Stock</span>
+          </button>
+        </HasPermission>
       </div>
 
       {/* Filters */}
@@ -278,12 +282,14 @@ export default function AdminStockPage() {
                         : '—'}
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <button
-                        onClick={() => handleEdit(v)}
-                        className="bg-slate-700 hover:bg-slate-600 text-white font-bold text-[10px] px-3 py-1.5 rounded-lg transition-all"
-                      >
-                        Edit
-                      </button>
+                      <HasPermission permission="stock:manage">
+                        <button
+                          onClick={() => handleEdit(v)}
+                          className="bg-slate-700 hover:bg-slate-600 text-white font-bold text-[10px] px-3 py-1.5 rounded-lg transition-all"
+                        >
+                          Edit
+                        </button>
+                      </HasPermission>
                     </td>
                   </tr>
                 ))
@@ -386,14 +392,16 @@ export default function AdminStockPage() {
               >
                 Cancel
               </button>
-              <button
-                onClick={handleSaveEdit}
-                disabled={saving}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 disabled:opacity-50"
-              >
-                <Save className="w-4 h-4" />
-                <span>{saving ? 'Saving...' : 'Save Changes'}</span>
-              </button>
+              <HasPermission permission="stock:manage">
+                <button
+                  onClick={handleSaveEdit}
+                  disabled={saving}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{saving ? 'Saving...' : 'Save Changes'}</span>
+                </button>
+              </HasPermission>
             </div>
           </div>
         </div>
@@ -484,14 +492,16 @@ export default function AdminStockPage() {
               >
                 Cancel
               </button>
-              <button
-                onClick={handleBulkSubmit}
-                disabled={bulkSaving || bulkItems.filter((i) => i.qty > 0).length === 0}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 disabled:opacity-50"
-              >
-                <Package className="w-4 h-4" />
-                <span>{bulkSaving ? 'Adding...' : `Add Stock to ${bulkItems.filter((i) => i.qty > 0).length} Variants`}</span>
-              </button>
+              <HasPermission permission="stock:manage">
+                <button
+                  onClick={handleBulkSubmit}
+                  disabled={bulkSaving || bulkItems.filter((i) => i.qty > 0).length === 0}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 disabled:opacity-50"
+                >
+                  <Package className="w-4 h-4" />
+                  <span>{bulkSaving ? 'Adding...' : `Add Stock to ${bulkItems.filter((i) => i.qty > 0).length} Variants`}</span>
+                </button>
+              </HasPermission>
             </div>
           </div>
         </div>

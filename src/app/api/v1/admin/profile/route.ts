@@ -1,18 +1,16 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
-import { getAuthSession } from '@/lib/middleware-auth';
+import { requirePermission, PERMISSIONS } from '@/lib/permissions';
 import { ApiUtils } from '@/lib/api-response';
 import bcrypt from 'bcryptjs';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getAuthSession(request);
-    if (!session || session.userType !== 'ADMIN') {
-      return ApiUtils.forbidden();
-    }
+    const auth = await requirePermission(request, PERMISSIONS.SETTINGS_READ);
+    if (!auth) return ApiUtils.forbidden();
 
     const user = await prisma.user.findUnique({
-      where: { id: session.userId },
+      where: { id: auth.session.userId },
       select: {
         id: true,
         email: true,
@@ -20,6 +18,8 @@ export async function GET(request: NextRequest) {
         lastName: true,
         phone: true,
         userType: true,
+        role: true,
+        department: true,
         status: true,
         lastLoginAt: true,
         createdAt: true,
@@ -40,10 +40,8 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getAuthSession(request);
-    if (!session || session.userType !== 'ADMIN') {
-      return ApiUtils.forbidden();
-    }
+    const auth = await requirePermission(request, PERMISSIONS.SETTINGS_MANAGE);
+    if (!auth) return ApiUtils.forbidden();
 
     const body = await request.json();
     const { firstName, lastName, email, phone, currentPassword, newPassword } = body;
@@ -57,7 +55,7 @@ export async function PUT(request: NextRequest) {
     const existingUser = await prisma.user.findFirst({
       where: {
         email,
-        id: { not: session.userId },
+        id: { not: auth.session.userId },
       },
     });
 
@@ -72,7 +70,7 @@ export async function PUT(request: NextRequest) {
       }
 
       const user = await prisma.user.findUnique({
-        where: { id: session.userId },
+        where: { id: auth.session.userId },
         select: { passwordHash: true },
       });
 
@@ -104,7 +102,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const updatedUser = await prisma.user.update({
-      where: { id: session.userId },
+      where: { id: auth.session.userId },
       data: updateData,
       select: {
         id: true,

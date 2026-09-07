@@ -169,9 +169,12 @@ model Collection {
 model Product {
   id            String   @id @default(uuid())
   articleNumber String   @unique
-  name          String
+  name          String?
   slug          String   @unique
   description   String?
+  shirtStyle    String?
+  dupattaStyle  String?
+  trouserStyle  String?
   categoryId    String
   collectionId  String?
   basePrice     Float    // Wholesale base price (HS price baseline)

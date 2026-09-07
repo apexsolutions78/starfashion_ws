@@ -67,9 +67,13 @@ export async function POST(request: NextRequest) {
       return ApiUtils.error('Email, password, first name, and last name are required');
     }
 
-    // Validate role
-    if (role && !['MASTER_ADMIN', 'ADMIN', 'USER', 'SALES'].includes(role)) {
-      return ApiUtils.error('Invalid role');
+    // Validate role against built-in roles + custom roles from Role table
+    const builtInRoles = ['MASTER_ADMIN', 'ADMIN', 'USER', 'SALES'];
+    if (role && !builtInRoles.includes(role)) {
+      const customRole = await prisma.role.findFirst({ where: { name: role } });
+      if (!customRole) {
+        return ApiUtils.error('Invalid role');
+      }
     }
 
     // Check if email already exists
@@ -154,9 +158,13 @@ export async function PUT(request: NextRequest) {
       return ApiUtils.forbidden('Cannot edit Master Admin');
     }
 
-    // Validate role
-    if (role && !['MASTER_ADMIN', 'ADMIN', 'USER', 'SALES'].includes(role)) {
-      return ApiUtils.error('Invalid role');
+    // Validate role against built-in roles + custom roles from Role table
+    const builtInRoles = ['MASTER_ADMIN', 'ADMIN', 'USER', 'SALES'];
+    if (role && !builtInRoles.includes(role)) {
+      const customRole = await prisma.role.findFirst({ where: { name: role } });
+      if (!customRole) {
+        return ApiUtils.error('Invalid role');
+      }
     }
 
     // Check if email already exists for another user

@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { getAuthSession } from '@/lib/middleware-auth';
+import { requirePermission, PERMISSIONS } from '@/lib/permissions';
 import { ApiUtils } from '@/lib/api-response';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
@@ -17,10 +17,8 @@ const updateTiersSchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
-  const session = await getAuthSession(req);
-  if (!session || session.userType !== 'ADMIN') {
-    return ApiUtils.forbidden('Admin authorization required');
-  }
+  const auth = await requirePermission(req, PERMISSIONS.TIERS_READ);
+  if (!auth) return ApiUtils.forbidden();
 
   const tiers = await prisma.pricingTier.findMany({
     orderBy: { minQuantity: 'asc' },
@@ -30,10 +28,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const session = await getAuthSession(req);
-  if (!session || session.userType !== 'ADMIN') {
-    return ApiUtils.forbidden('Admin authorization required');
-  }
+  const auth = await requirePermission(req, PERMISSIONS.TIERS_MANAGE);
+  if (!auth) return ApiUtils.forbidden();
 
   try {
     const body = await req.json();
@@ -72,8 +68,8 @@ export async function PUT(req: NextRequest) {
       // Record Audit Log
       await tx.auditLog.create({
         data: {
-          actorId: session.userId,
-          actorEmail: session.email,
+          actorId: auth.session.userId,
+          actorEmail: auth.session.email,
           action: 'PRICING_TIERS_UPDATED',
           entityType: 'PricingTier',
           entityId: 'GLOBAL_TIERS',
