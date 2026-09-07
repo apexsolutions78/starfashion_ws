@@ -1,11 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CreditCard, DollarSign, FileText, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { CreditCard, DollarSign, FileText, ArrowUpRight, ArrowDownLeft, Download } from 'lucide-react';
 
 export default function CustomerStatementPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  const handlePrint = () => {
+    document.body.classList.add('print-mode');
+    window.print();
+    setTimeout(() => document.body.classList.remove('print-mode'), 500);
+  };
 
   useEffect(() => {
     fetch('/api/v1/account/statement')
@@ -29,12 +35,30 @@ export default function CustomerStatementPage() {
   const availableCredit = Math.max(0, creditLimit - currentBalance);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 print-statement-root">
+      {/* Print-only company header */}
+      <div className="print-company-header hidden">
+        <div className="print-company-header-inner">
+          <img src="/logo-small.png" alt="StarFashion" className="print-logo" />
+          <div>
+            <h1 className="print-company-name">StarFashion Wholesale</h1>
+            <p className="print-company-sub">Account & Customer Statement</p>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Account & Customer Ledger</h1>
           <p className="text-slate-500 text-sm mt-1">{company?.companyName} — Account Statement</p>
         </div>
+        <button
+          onClick={handlePrint}
+          className="inline-flex items-center space-x-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-800 transition-colors shadow-sm no-print"
+        >
+          <Download className="w-4 h-4" />
+          <span>Download PDF</span>
+        </button>
       </div>
 
       {/* Account Metric Cards */}
@@ -122,6 +146,140 @@ export default function CustomerStatementPage() {
           </div>
         )}
       </div>
+
+      {/* Print CSS */}
+      <style jsx global>{`
+        @media print {
+          /* Hide portal header/navigation */
+          body.print-mode header,
+          body.print-mode nav,
+          body.print-mode .no-print {
+            display: none !important;
+          }
+
+          body.print-mode main {
+            padding: 0 !important;
+            max-width: 100% !important;
+          }
+
+          body.print-mode {
+            background: white !important;
+          }
+
+          /* Show print-only company header */
+          body.print-mode .print-company-header {
+            display: block !important;
+          }
+
+          /* Statement root spacing */
+          body.print-mode .print-statement-root {
+            padding: 20px;
+          }
+
+          /* Print company header */
+          .print-company-header {
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #1e293b;
+          }
+
+          .print-company-header-inner {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+          }
+
+          .print-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            object-fit: contain;
+          }
+
+          .print-company-name {
+            font-size: 20px;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0;
+            letter-spacing: -0.02em;
+          }
+
+          .print-company-sub {
+            font-size: 12px;
+            color: #64748b;
+            margin: 2px 0 0 0;
+          }
+
+          /* Format metric cards for print */
+          body.print-mode .grid > div {
+            break-inside: avoid;
+          }
+
+          /* Format ledger table for print */
+          body.print-mode table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 10px;
+          }
+
+          body.print-mode table thead tr {
+            background: #f1f5f9 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+
+          body.print-mode table th {
+            border: 1px solid #cbd5e1 !important;
+            padding: 8px 12px;
+            font-weight: 700;
+            color: #334155;
+            text-transform: uppercase;
+            font-size: 9px;
+            letter-spacing: 0.05em;
+          }
+
+          body.print-mode table td {
+            border: 1px solid #e2e8f0 !important;
+            padding: 6px 12px;
+            color: #1e293b;
+          }
+
+          body.print-mode table tbody tr:nth-child(even) {
+            background: #f8fafc !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+
+          /* Badge colors for print */
+          body.print-mode .inline-flex {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+
+          /* Ensure colored cards print */
+          body.print-mode .bg-slate-900 {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+
+          body.print-mode .bg-white {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+
+          /* Page settings */
+          @page {
+            margin: 15mm;
+            size: A4 portrait;
+          }
+
+          /* Force color printing for backgrounds */
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

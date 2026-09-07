@@ -165,6 +165,13 @@ export default function AdminUsersPage() {
             <span>ADMIN</span>
           </span>
         );
+      case 'SALES':
+        return (
+          <span className="flex items-center space-x-1 bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full text-[10px] font-bold">
+            <Users className="w-3 h-3" />
+            <span>SALES</span>
+          </span>
+        );
       default:
         return (
           <span className="flex items-center space-x-1 bg-slate-500/20 text-slate-400 px-2 py-0.5 rounded-full text-[10px] font-bold">
@@ -395,6 +402,7 @@ export default function AdminUsersPage() {
                 >
                   <option value="USER">User - Products only</option>
                   <option value="ADMIN">Admin - Full access</option>
+                  <option value="SALES">Sales - Sales department</option>
                   <option value="MASTER_ADMIN">Master Admin - Full access + user management</option>
                 </select>
               </div>
