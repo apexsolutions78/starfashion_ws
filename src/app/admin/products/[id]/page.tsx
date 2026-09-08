@@ -124,6 +124,15 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Variant management state
+  const [showVariantForm, setShowVariantForm] = useState(false);
+  const [variantColorId, setVariantColorId] = useState('');
+  const [variantSizeId, setVariantSizeId] = useState('');
+  const [variantSku, setVariantSku] = useState('');
+  const [variantStock, setVariantStock] = useState('0');
+  const [addingVariant, setAddingVariant] = useState(false);
+  const [deletingVariant, setDeletingVariant] = useState<string | null>(null);
+
   // Oversized image confirmation state
   const [pendingOversizedFiles, setPendingOversizedFiles] = useState<PendingFile[]>([]);
   const [pendingNormalFiles, setPendingNormalFiles] = useState<File[]>([]);
@@ -179,6 +188,67 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
       console.error('Error fetching product:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAddVariant = async () => {
+    if (!variantColorId || !variantSizeId) {
+      alert('Please select both color and size');
+      return;
+    }
+
+    setAddingVariant(true);
+    try {
+      const res = await fetch(`/api/v1/admin/products/${id}/variants`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          colorId: variantColorId,
+          sizeId: variantSizeId,
+          sku: variantSku || undefined,
+          stock: parseInt(variantStock) || 0,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setVariants([...variants, data.data]);
+        setVariantColorId('');
+        setVariantSizeId('');
+        setVariantSku('');
+        setVariantStock('0');
+        setShowVariantForm(false);
+      } else {
+        alert(data.error || 'Failed to add variant');
+      }
+    } catch (error) {
+      console.error('Error adding variant:', error);
+      alert('Failed to add variant');
+    } finally {
+      setAddingVariant(false);
+    }
+  };
+
+  const handleDeleteVariant = async (variantId: string) => {
+    if (!confirm('Are you sure you want to delete this variant?')) return;
+
+    setDeletingVariant(variantId);
+    try {
+      const res = await fetch(`/api/v1/admin/products/${id}/variants?variantId=${variantId}`, {
+        method: 'DELETE',
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setVariants(variants.filter(v => v.id !== variantId));
+      } else {
+        alert(data.error || 'Failed to delete variant');
+      }
+    } catch (error) {
+      console.error('Error deleting variant:', error);
+      alert('Failed to delete variant');
+    } finally {
+      setDeletingVariant(null);
     }
   };
 
@@ -740,9 +810,89 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
           {/* Variants */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-            <h2 className="text-lg font-semibold text-white mb-4">Product Variants</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white">Product Variants</h2>
+              <button
+                type="button"
+                onClick={() => setShowVariantForm(!showVariantForm)}
+                className="text-emerald-400 hover:text-emerald-300 text-xs font-medium bg-emerald-500/10 px-2 py-1 rounded"
+              >
+                + Add Variant
+              </button>
+            </div>
+
+            {showVariantForm && (
+              <div className="bg-slate-950/50 border border-slate-800 rounded-lg p-3 mb-4">
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Color *</label>
+                    <select
+                      value={variantColorId}
+                      onChange={(e) => setVariantColorId(e.target.value)}
+                      className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:border-emerald-500"
+                    >
+                      <option value="">Select color</option>
+                      {colors.map((c: any) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Size *</label>
+                    <select
+                      value={variantSizeId}
+                      onChange={(e) => setVariantSizeId(e.target.value)}
+                      className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:border-emerald-500"
+                    >
+                      <option value="">Select size</option>
+                      {sizes.map((s: any) => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">SKU (auto-generated if empty)</label>
+                    <input
+                      type="text"
+                      value={variantSku}
+                      onChange={(e) => setVariantSku(e.target.value)}
+                      placeholder="e.g., SF-5006-LIL-S"
+                      className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Initial Stock</label>
+                    <input
+                      type="number"
+                      value={variantStock}
+                      onChange={(e) => setVariantStock(e.target.value)}
+                      min="0"
+                      className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    type="button"
+                    onClick={handleAddVariant}
+                    disabled={addingVariant || !variantColorId || !variantSizeId}
+                    className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-3 py-1.5 rounded-lg text-xs font-medium"
+                  >
+                    {addingVariant ? 'Adding...' : 'Add Variant'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowVariantForm(false)}
+                    className="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-medium"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
             {variants.length === 0 ? (
-              <p className="text-slate-500 text-sm">No variants. Variants are created when adding a new product.</p>
+              <p className="text-slate-500 text-sm">No variants. Add a variant using the button above.</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -756,6 +906,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                       <th className="pb-3 font-medium text-right">Stock</th>
                       <th className="pb-3 font-medium text-right">Reserved</th>
                       <th className="pb-3 font-medium text-right">Available</th>
+                      <th className="pb-3 font-medium text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -795,6 +946,16 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                           <td className="py-3 text-right text-slate-300">{stock}</td>
                           <td className="py-3 text-right text-amber-400">{reserved}</td>
                           <td className="py-3 text-right text-emerald-400">{stock - reserved}</td>
+                          <td className="py-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteVariant(variant.id)}
+                              disabled={deletingVariant === variant.id}
+                              className="text-red-400 hover:text-red-300 disabled:opacity-50 text-xs"
+                            >
+                              {deletingVariant === variant.id ? '...' : 'Delete'}
+                            </button>
+                          </td>
                         </tr>
                       );
                     })}

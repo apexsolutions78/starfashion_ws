@@ -20,6 +20,39 @@ interface ProductRow {
   stock: number;
 }
 
+function parseCSVLine(line: string): string[] {
+  const columns: string[] = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (inQuotes) {
+      if (char === '"') {
+        if (i + 1 < line.length && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        current += char;
+      }
+    } else {
+      if (char === '"') {
+        inQuotes = true;
+      } else if (char === ',') {
+        columns.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+  }
+  columns.push(current.trim());
+  return columns;
+}
+
 function parseCSV(csvContent: string): ProductRow[] {
   const lines = csvContent.split('\n').filter(line => line.trim());
 
@@ -34,7 +67,7 @@ function parseCSV(csvContent: string): ProductRow[] {
     const line = dataLines[i].trim();
     if (!line || line.startsWith('"')) continue;
 
-    const columns = line.split(',').map(col => col.trim().replace(/^"|"$/g, ''));
+    const columns = parseCSVLine(line);
 
     // New format: 13 cols (Article, Price, Name, Description, ShirtStyle, DupattaStyle, TrouserStyle, Category, Collection, Color, Size, SKU, Stock)
     // New format without SKU: 12 cols

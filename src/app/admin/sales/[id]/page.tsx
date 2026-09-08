@@ -34,8 +34,8 @@ interface Assignment {
 
 interface Commission {
   id: string;
-  rate: number;
-  bonus: number;
+  commissionRate: number;
+  bonusAmount: number;
   period: string;
   startDate: string;
   endDate: string | null;
@@ -300,8 +300,8 @@ export default function SalesUserDetailPage({ params }: { params: Promise<{ id: 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          rate: parseFloat(commissionRate),
-          bonus: parseFloat(commissionBonus) || 0,
+          commissionRate: parseFloat(commissionRate),
+          bonusAmount: commissionBonus || undefined,
           period: commissionPeriod,
         }),
       });
@@ -724,9 +724,9 @@ export default function SalesUserDetailPage({ params }: { params: Promise<{ id: 
                           <DollarSign className="w-5 h-5 text-emerald-400" />
                         </div>
                         <div>
-                          <p className="text-white font-medium text-sm">{c.rate}% Rate</p>
+                          <p className="text-white font-medium text-sm">{c.commissionRate}% Rate</p>
                           <p className="text-slate-500 text-xs">
-                            Bonus: Rs.{c.bonus.toFixed(2)} • Period: {c.period}
+                            Bonus: Rs.{(c.bonusAmount || 0).toFixed(2)} • Period: {c.period}
                           </p>
                         </div>
                       </div>

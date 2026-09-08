@@ -1,5 +1,5 @@
 # StarFashion Wholesale - Session State
-# Last Updated: 2026-09-07
+# Last Updated: 2026-09-08
 # This file captures the complete implementation state for continuity across sessions.
 
 ## Quick Start
@@ -186,8 +186,16 @@
 21. Added inline Collection management (add/delete) on product new/edit pages
 22. Added inline Color management with swatches (add/delete with color picker) on product new/edit pages
 23. Created API routes: `/api/v1/admin/categories`, `/api/v1/admin/collections`, `/api/v1/admin/colors` (GET/POST/DELETE)
+24. Fixed null permissions crash on sales user detail page (`/admin/sales/[id]`)
+25. Fixed CSV parser to handle quoted fields containing commas (replaced `split(',')` with proper `parseCSVLine()` function)
+26. Added variant management: Create (`POST`) and Delete (`DELETE`) API at `/api/v1/admin/products/[id]/variants`
+27. Added variant management UI on product edit page (add form + delete buttons)
+28. Fixed sales commission field name mismatch: frontend now sends `commissionRate`/`bonusAmount` to match API
+29. Fixed Commission interface: `rate`→`commissionRate`, `bonus`→`bonusAmount`
+30. Fixed commission display null safety: `(c.bonusAmount || 0).toFixed(2)`
 
 ## Key API Routes (New)
 - `GET/POST/DELETE /api/v1/admin/categories` — Category CRUD (delete checks for product usage)
 - `GET/POST/DELETE /api/v1/admin/collections` — Collection CRUD (delete checks for product usage)
 - `GET/POST/DELETE /api/v1/admin/colors` — Color CRUD with hex code (delete checks for variant usage)
+- `POST/DELETE /api/v1/admin/products/[id]/variants` — Variant CRUD (create with color/size/SKU/stock, delete with order check)
